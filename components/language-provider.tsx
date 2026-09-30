@@ -1,0 +1,321 @@
+"use client";
+
+import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
+
+export type Language = "te" | "en";
+
+const messages = {
+  te: {
+    appName: "ట్రాక్టర్ లెక్కలు",
+    appSubtitle: "ట్రాక్టర్ పని వివరాలు",
+    language: "English",
+    languageLabel: "భాషను English కు మార్చండి",
+    signOut: "లాగ్ అవుట్",
+    loading: "లోడ్ అవుతోంది...",
+    checkingSession: "లాగిన్ వివరాలు చూస్తున్నాం...",
+    home: "హోమ్",
+    addWork: "పని నమోదు",
+    customers: "రైతులు",
+    records: "పని వివరాలు",
+    payments: "చెల్లింపులు",
+    workTypes: "పని రకాలు",
+    settings: "సెట్టింగులు",
+    overview: "మొత్తం లెక్క",
+    todayRecords: "పని వివరాలు",
+    overviewHelp: "పని, తీసుకున్న డబ్బు, రావాల్సిన డబ్బు అన్నీ ఒకే చోట.",
+    totalWork: "మొత్తం పని",
+    received: "తీసుకున్న డబ్బు",
+    pending: "రావాల్సిన డబ్బు",
+    recentWork: "ఇటీవలి పనులు",
+    recordCount: "{count} పనులు",
+    noWork: "ఇంకా పని నమోదు చేయలేదు",
+    noWorkHelp: "మొదటి పనిని నమోదు చేయడానికి పని నమోదు నొక్కండి.",
+    farmer: "రైతు",
+    paid: "మొత్తం చెల్లించారు",
+    dueShort: "{amount} రావాలి",
+    editWork: "పని మార్చండి",
+    shareReceipt: "రసీదు పంపండి",
+    customerList: "రైతుల జాబితా",
+    customerHelp: "రైతును వెతికి పూర్తి లెక్క చూడండి.",
+    search: "వెతకండి",
+    searchPlaceholder: "పేరు లేదా ఫోన్ నంబర్ వెతకండి",
+    noPhone: "ఫోన్ నంబర్ లేదు",
+    balanceDue: "రావాల్సిన డబ్బు",
+    noFarmers: "రైతులు కనిపించలేదు",
+    noFarmersHelp: "వేరే పేరు లేదా ఫోన్ నంబర్‌తో వెతకండి.",
+    allFarmers: "రైతులందరూ",
+    totalAmount: "మొత్తం డబ్బు",
+    workPaymentHistory: "పని, చెల్లింపుల వివరాలు",
+    noFarmerWork: "ఈ రైతుకు పని లేదు",
+    noFarmerWorkHelp: "నమోదు చేసిన పనులు ఇక్కడ కనిపిస్తాయి.",
+    addPayment: "చెల్లింపు నమోదు",
+    payment: "చెల్లింపు",
+    workTypesHelp: "మీరు తరచుగా చేసే ట్రాక్టర్ పనులను నమోదు చేయండి.",
+    newWorkType: "కొత్త పని రకం",
+    workTypeExample: "ఉదా: దుక్కి",
+    add: "జోడించండి",
+    availableInForm: "పని నమోదులో కనిపిస్తుంది",
+    hiddenFromForm: "పని నమోదులో కనిపించదు",
+    newRecord: "కొత్త పని",
+    editRecord: "పని మార్చండి",
+    existingFarmer: "పాత రైతు",
+    newFarmer: "కొత్త రైతు",
+    farmerName: "రైతు పేరు",
+    selectFarmer: "రైతును ఎంచుకోండి",
+    phoneNumber: "ఫోన్ నంబర్",
+    optional: "అవసరం లేకపోతే ఖాళీగా ఉంచండి",
+    workDate: "పని తేదీ",
+    workType: "పని రకం",
+    selectWorkType: "పని రకాన్ని ఎంచుకోండి",
+    chargeBasis: "లెక్కింపు విధానం",
+    perHour: "గంటకు",
+    perAcre: "ఎకరానికి",
+    hoursWorked: "పని చేసిన గంటలు",
+    acres: "ఎకరాలు",
+    ratePerHour: "గంటకు ధర",
+    ratePerAcre: "ఎకరానికి ధర",
+    amountReceived: "తీసుకున్న డబ్బు",
+    balanceAfterPayments: "చెల్లింపుల తర్వాత రావాల్సిన డబ్బు",
+    save: "సేవ్ చేయండి",
+    saveChanges: "మార్పులు సేవ్ చేయండి",
+    cancel: "రద్దు",
+    saving: "సేవ్ అవుతోంది...",
+    paymentDate: "చెల్లింపు తేదీ",
+    amount: "డబ్బు",
+    paymentMethod: "చెల్లింపు విధానం",
+    cash: "నగదు",
+    upi: "UPI",
+    bankTransfer: "బ్యాంక్ బదిలీ",
+    other: "ఇతర",
+    savePayment: "చెల్లింపు సేవ్ చేయండి",
+    savedSuccessfully: "వివరాలు సేవ్ అయ్యాయి",
+    workUpdated: "పని వివరాలు మార్చబడ్డాయి",
+    paymentSaved: "చెల్లింపు సేవ్ అయ్యింది",
+    workTypeAdded: "పని రకం జోడించబడింది",
+    shareReceiptTitle: "రసీదు పంపండి",
+    sendWhatsApp: "వాట్సాప్‌లో పంపండి",
+    sendSms: "SMS ద్వారా పంపండి",
+    done: "పూర్తయింది",
+    receiptTitle: "ట్రాక్టర్ పని రసీదు",
+    receiptFarmer: "రైతు",
+    receiptDate: "తేదీ",
+    receiptWork: "పని",
+    receiptRate: "ధర",
+    receiptTotal: "మొత్తం డబ్బు",
+    receiptReceived: "తీసుకున్న డబ్బు",
+    receiptBalance: "రావాల్సిన డబ్బు",
+    thankYou: "ధన్యవాదాలు",
+    loginTitle: "ట్రాక్టర్ లెక్కలు",
+    email: "ఈమెయిల్",
+    password: "పాస్‌వర్డ్",
+    showPassword: "పాస్‌వర్డ్ చూపించండి",
+    hidePassword: "పాస్‌వర్డ్ దాచండి",
+    signIn: "లాగిన్ చేయండి",
+    signingIn: "లాగిన్ అవుతోంది...",
+    privateRecords: "మీ లెక్కలు మీకు మాత్రమే కనిపిస్తాయి.",
+    setupTitle: "Supabase ను కనెక్ట్ చేయండి",
+    setupOnce: "ఒక్కసారి సెటప్",
+    setupHelp: "ఈ రెండు Supabase వివరాలను .env.local లో జోడించి యాప్‌ను మళ్లీ ప్రారంభించండి.",
+    setupDocs: "పూర్తి వివరాలు README.md లో ఉన్నాయి.",
+    close: "మూసివేయండి",
+    noWorkTypes: "పని రకాలు లేవు. పని రకాల పేజీలో జోడించండి.",
+    invalidAmounts: "సున్నా కంటే ఎక్కువ పరిమాణం, సున్నా లేదా అంతకంటే ఎక్కువ ధర నమోదు చేయండి.",
+    totalBelowPaid: "ఇప్పటికే తీసుకున్న {amount} కంటే మొత్తం డబ్బు తక్కువగా ఉండకూడదు.",
+    receivedTooHigh: "తీసుకున్న డబ్బు మొత్తం డబ్బు కంటే ఎక్కువగా ఉండకూడదు.",
+    chooseWorkType: "పని రకాన్ని ఎంచుకోండి.",
+    enterFarmerName: "రైతు పేరు నమోదు చేయండి.",
+    chooseFarmer: "రైతును ఎంచుకోండి.",
+    paymentPositive: "సున్నా కంటే ఎక్కువ చెల్లింపు నమోదు చేయండి.",
+    paymentTooHigh: "చెల్లింపు రావాల్సిన {amount} కంటే ఎక్కువగా ఉండకూడదు.",
+    workSavedPaymentFailed: "పని సేవ్ అయ్యింది, కానీ చెల్లింపు సేవ్ కాలేదు: {error}",
+    technicalError: "పని పూర్తి కాలేదు. మళ్లీ ప్రయత్నించండి. వివరాలు: {error}",
+    sessionExpired: "మీ లాగిన్ సమయం ముగిసింది. మళ్లీ లాగిన్ చేయండి.",
+    invalidLogin: "ఈమెయిల్ లేదా పాస్‌వర్డ్ సరైనది కాదు.",
+    networkError: "ఇంటర్నెట్ కనెక్షన్‌ను చూసి మళ్లీ ప్రయత్నించండి.",
+  },
+  en: {
+    appName: "Tractor Records",
+    appSubtitle: "Tractor work records",
+    language: "తెలుగు",
+    languageLabel: "Switch language to Telugu",
+    signOut: "Sign out",
+    loading: "Loading...",
+    checkingSession: "Checking your login...",
+    home: "Home",
+    addWork: "Add Work",
+    customers: "Customers",
+    records: "Records",
+    payments: "Payments",
+    workTypes: "Work types",
+    settings: "Settings",
+    overview: "Overview",
+    todayRecords: "Work records",
+    overviewHelp: "Work, payments and pending amounts in one place.",
+    totalWork: "Total work",
+    received: "Amount received",
+    pending: "Balance due",
+    recentWork: "Recent work",
+    recordCount: "{count} records",
+    noWork: "No work saved yet",
+    noWorkHelp: "Tap Add Work to save the first tractor job.",
+    farmer: "Farmer",
+    paid: "Paid",
+    dueShort: "{amount} due",
+    editWork: "Edit work",
+    shareReceipt: "Share receipt",
+    customerList: "Customer list",
+    customerHelp: "Search and open a farmer's full account.",
+    search: "Search",
+    searchPlaceholder: "Search name or phone number",
+    noPhone: "No phone number",
+    balanceDue: "Balance due",
+    noFarmers: "No farmers found",
+    noFarmersHelp: "Try a different name or phone number.",
+    allFarmers: "All farmers",
+    totalAmount: "Total amount",
+    workPaymentHistory: "Work and payment history",
+    noFarmerWork: "No work for this farmer",
+    noFarmerWorkHelp: "Their saved work will appear here.",
+    addPayment: "Add payment",
+    payment: "Payment",
+    workTypesHelp: "Add the tractor jobs you commonly do.",
+    newWorkType: "New work type",
+    workTypeExample: "Example: Ploughing",
+    add: "Add",
+    availableInForm: "Available in form",
+    hiddenFromForm: "Hidden from form",
+    newRecord: "New record",
+    editRecord: "Edit record",
+    existingFarmer: "Existing farmer",
+    newFarmer: "New farmer",
+    farmerName: "Farmer name",
+    selectFarmer: "Select farmer",
+    phoneNumber: "Phone number",
+    optional: "Leave empty if unavailable",
+    workDate: "Work date",
+    workType: "Work type",
+    selectWorkType: "Select work type",
+    chargeBasis: "Charge basis",
+    perHour: "Per hour",
+    perAcre: "Per acre",
+    hoursWorked: "Hours worked",
+    acres: "Acres",
+    ratePerHour: "Rate per hour",
+    ratePerAcre: "Rate per acre",
+    amountReceived: "Amount received",
+    balanceAfterPayments: "Balance after saved payments",
+    save: "Save",
+    saveChanges: "Save changes",
+    cancel: "Cancel",
+    saving: "Saving...",
+    paymentDate: "Payment date",
+    amount: "Amount",
+    paymentMethod: "Payment method",
+    cash: "Cash",
+    upi: "UPI",
+    bankTransfer: "Bank transfer",
+    other: "Other",
+    savePayment: "Save payment",
+    savedSuccessfully: "Saved successfully",
+    workUpdated: "Work updated",
+    paymentSaved: "Payment saved",
+    workTypeAdded: "Work type added",
+    shareReceiptTitle: "Share receipt",
+    sendWhatsApp: "Send on WhatsApp",
+    sendSms: "Send by SMS",
+    done: "Done",
+    receiptTitle: "TRACTOR WORK RECEIPT",
+    receiptFarmer: "Farmer",
+    receiptDate: "Date",
+    receiptWork: "Work",
+    receiptRate: "Rate",
+    receiptTotal: "Total amount",
+    receiptReceived: "Amount received",
+    receiptBalance: "Balance due",
+    thankYou: "Thank you",
+    loginTitle: "Tractor Records",
+    email: "Email",
+    password: "Password",
+    showPassword: "Show password",
+    hidePassword: "Hide password",
+    signIn: "Sign in",
+    signingIn: "Signing in...",
+    privateRecords: "Only you can see your records.",
+    setupTitle: "Connect Supabase",
+    setupOnce: "One-time setup",
+    setupHelp: "Add the two Supabase values to .env.local, then restart the app.",
+    setupDocs: "Full instructions are in README.md.",
+    close: "Close",
+    noWorkTypes: "No work types. Add one from the Work types page.",
+    invalidAmounts: "Enter a quantity above zero and a non-negative rate.",
+    totalBelowPaid: "Total cannot be less than payments already received ({amount}).",
+    receivedTooHigh: "Amount received cannot be greater than the total amount.",
+    chooseWorkType: "Select a work type.",
+    enterFarmerName: "Enter the farmer name.",
+    chooseFarmer: "Select a farmer.",
+    paymentPositive: "Enter a payment greater than zero.",
+    paymentTooHigh: "Payment cannot be more than the balance ({amount}).",
+    workSavedPaymentFailed: "Work saved, but payment failed: {error}",
+    technicalError: "The action failed. Please try again. Details: {error}",
+    sessionExpired: "Your session expired. Please sign in again.",
+    invalidLogin: "The email or password is incorrect.",
+    networkError: "Check your internet connection and try again.",
+  },
+} as const;
+
+export type MessageKey = keyof typeof messages.en;
+
+type LanguageContextValue = {
+  language: Language;
+  setLanguage: (language: Language) => void;
+  t: (key: MessageKey, values?: Record<string, string | number>) => string;
+};
+
+const LanguageContext = createContext<LanguageContextValue | null>(null);
+
+export function LanguageProvider({ children }: { children: ReactNode }) {
+  const [language, setLanguageState] = useState<Language>("te");
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      const saved = window.localStorage.getItem("tractor-language");
+      if (saved === "te" || saved === "en") {
+        setLanguageState(saved);
+        document.documentElement.lang = saved;
+      }
+    }, 0);
+    return () => window.clearTimeout(timer);
+  }, []);
+
+  const value = useMemo<LanguageContextValue>(() => ({
+    language,
+    setLanguage: (nextLanguage) => {
+      setLanguageState(nextLanguage);
+      window.localStorage.setItem("tractor-language", nextLanguage);
+      document.documentElement.lang = nextLanguage;
+    },
+    t: (key, values) => {
+      let result: string = messages[language][key];
+      for (const [name, replacement] of Object.entries(values ?? {})) {
+        result = result.replace(`{${name}}`, String(replacement));
+      }
+      return result;
+    },
+  }), [language]);
+
+  return <LanguageContext.Provider value={value}>{children}</LanguageContext.Provider>;
+}
+
+export function useLanguage() {
+  const context = useContext(LanguageContext);
+  if (!context) throw new Error("useLanguage must be used inside LanguageProvider");
+  return context;
+}
+
+export function friendlyError(message: string, t: LanguageContextValue["t"]) {
+  const lower = message.toLowerCase();
+  if (lower.includes("invalid login") || lower.includes("invalid credentials")) return t("invalidLogin");
+  if (lower.includes("jwt") || lower.includes("session")) return t("sessionExpired");
+  if (lower.includes("fetch") || lower.includes("network")) return t("networkError");
+  return t("technicalError", { error: message });
+}
