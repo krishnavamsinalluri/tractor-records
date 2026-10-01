@@ -34,7 +34,7 @@ import {
   useLanguage,
   type MessageKey,
 } from "@/components/language-provider";
-import { getSupabase, hasSupabaseConfig } from "@/lib/supabase";
+import { getPasswordRecoveryRedirectUrl, getSupabase, hasSupabaseConfig } from "@/lib/supabase";
 import type { ChargeBasis, Customer, Payment, WorkRecord, WorkType } from "@/lib/types";
 
 type Notice = { tone: "success" | "error"; text: string } | null;
@@ -54,6 +54,38 @@ const subscribeToContactPickerSupport = () => () => undefined;
 const getContactPickerSupport = () => typeof navigator !== "undefined" && typeof navigator.contacts?.select === "function";
 const getServerContactPickerSupport = () => false;
 const UNSAVED_CHANGES_MESSAGE = "మార్పులను సేవ్ చేయకుండా బయటకు వెళ్లాలా?";
+
+function recoveryParameters() {
+  const query = typeof window === "undefined"
+    ? new URLSearchParams()
+    : new URLSearchParams(window.location.search);
+  const hash = typeof window === "undefined"
+    ? new URLSearchParams()
+    : new URLSearchParams(window.location.hash.replace(/^#/, ""));
+  const get = (name: string) => query.get(name) ?? hash.get(name);
+  return {
+    error: get("error"),
+    errorCode: get("error_code"),
+    errorDescription: get("error_description"),
+  };
+}
+
+type RecoveryLinkFailure = "expired-or-used" | "invalid";
+
+function recoveryLinkFailure(error: string | null, errorCode: string | null, description: string | null): RecoveryLinkFailure | null {
+  if (!error && !errorCode) return null;
+  const errorText = `${errorCode ?? ""} ${description ?? ""}`.toLowerCase();
+  if (
+    errorCode === "otp_expired" ||
+    errorCode === "session_expired" ||
+    errorText.includes("expired") ||
+    errorText.includes("already") ||
+    errorText.includes("used")
+  ) {
+    return "expired-or-used";
+  }
+  return "invalid";
+}
 
 function useUnsavedChangesGuard(isDirty: boolean) {
   useEffect(() => {
@@ -148,7 +180,7 @@ function LanguageToggle({ compact = false }: { compact?: boolean }) {
   );
 }
 
-function EmptyState({ icon: Icon, title, text }: {
+function EmptyState({ title, text }: {
   icon: typeof ClipboardList;
   title: string;
   text: string;
@@ -181,10 +213,7 @@ function TractorAppContent() {
   const searchParams = useSearchParams();
   const [session, setSession] = useState<Session | null>(null);
   const [authLoading, setAuthLoading] = useState(hasSupabaseConfig);
-  const [passwordRecovery, setPasswordRecovery] = useState(() => {
-    if (typeof window === "undefined") return false;
-    return new URLSearchParams(window.location.hash.replace(/^#/, "")).get("type") === "recovery";
-  });
+  const [passwordRecovery, setPasswordRecovery] = useState(false);
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [workTypes, setWorkTypes] = useState<WorkType[]>([]);
   const [works, setWorks] = useState<WorkRecord[]>([]);
@@ -259,11 +288,11 @@ function TractorAppContent() {
     const { data } = supabase.auth.onAuthStateChange((event, nextSession) => {
       if (!active) return;
       if (event === "PASSWORD_RECOVERY") {
-        setPasswordRecovery(true);
+        setPasswordRecovery(Boolean(nextSession));
         setSession(nextSession);
-        setAuthLoading(false);
         return;
       }
+      if (event === "SIGNED_IN" || event === "SIGNED_OUT") setPasswordRecovery(false);
       if (!initialCheckComplete || event === "INITIAL_SESSION") return;
       setSession(nextSession);
       setAuthLoading(false);
@@ -306,6 +335,12 @@ function TractorAppContent() {
     const timer = window.setTimeout(() => void loadData(), 0);
     return () => window.clearTimeout(timer);
   }, [session, loadData, pathname]);
+
+  useEffect(() => {
+    if (authLoading || session || !hasSupabaseConfig) return;
+    if (pathname === "/" || pathname === "/forgot-password" || pathname === "/reset-password") return;
+    router.replace("/");
+  }, [authLoading, pathname, router, session]);
 
   useEffect(() => {
     if (pathname === "/customers" && previousPath.current.startsWith("/customers/")) {
@@ -368,6 +403,18 @@ function TractorAppContent() {
       router.replace("/customers");
     }
   };
+  const signOut = async () => {
+    await getSupabase().auth.signOut({ scope: "local" });
+    setSession(null);
+    setPasswordRecovery(false);
+    setNotice(null);
+    setCustomerQuery("");
+    setSavedWorkForShare(null);
+    customerListScroll.current = 0;
+    detailOpenedFromList.current = false;
+    dialogOpenedInApp.current = false;
+    router.replace("/");
+  };
 
   return (
     <div className={isCustomerDetail ? "app-shell" : "app-shell has-bottom-nav"}>
@@ -385,7 +432,7 @@ function TractorAppContent() {
         )}
         <div className="topbar-actions">
           <LanguageToggle compact />
-          <IconButton icon={LogOut} label={t("signOut")} onClick={() => void getSupabase().auth.signOut({ scope: "local" })} />
+          <IconButton icon={LogOut} label={t("signOut")} onClick={() => void signOut()} />
         </div>
       </header>
 
@@ -485,6 +532,7 @@ function SetupRequired() {
 
 function Login() {
   const { t } = useLanguage();
+  const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [passwordVisible, setPasswordVisible] = useState(false);
@@ -497,6 +545,7 @@ function Login() {
     setError("");
     const { error: authError } = await getSupabase().auth.signInWithPassword({ email, password });
     if (authError) setError(friendlyError(authError.message, t));
+    else router.replace("/");
     setBusy(false);
   };
 
@@ -648,7 +697,7 @@ function ForgotPassword() {
     setBusy(true);
     try {
       await getSupabase().auth.resetPasswordForEmail(email.trim(), {
-        redirectTo: `${window.location.origin}/reset-password`,
+        redirectTo: getPasswordRecoveryRedirectUrl(),
       });
     } catch {
       // Keep the response generic so this screen never reveals account existence.
@@ -677,14 +726,16 @@ function ForgotPassword() {
 function ResetPassword({ hasRecoverySession }: { hasRecoverySession: boolean }) {
   const { t } = useLanguage();
   const router = useRouter();
-  const search = useSearchParams();
   const [newPassword, setNewPassword] = useState("");
   const [confirmation, setConfirmation] = useState("");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   const [success, setSuccess] = useState(false);
-  const hash = typeof window === "undefined" ? new URLSearchParams() : new URLSearchParams(window.location.hash.replace(/^#/, ""));
-  const invalidLink = Boolean(search.get("error") || search.get("error_code") || hash.get("error") || hash.get("error_code")) || !hasRecoverySession;
+  const [linkFailure, setLinkFailure] = useState<RecoveryLinkFailure | null>(() => {
+    const recovery = recoveryParameters();
+    return recoveryLinkFailure(recovery.error, recovery.errorCode, recovery.errorDescription);
+  });
+  const invalidLink = Boolean(linkFailure) || !hasRecoverySession;
   const requestClose = useUnsavedChangesGuard((newPassword !== "" || confirmation !== "") && !success && !busy);
 
   const submit = async (event: FormEvent) => {
@@ -695,7 +746,19 @@ function ResetPassword({ hasRecoverySession }: { hasRecoverySession: boolean }) 
     setBusy(true);
     const { error: updateError } = await getSupabase().auth.updateUser({ password: newPassword });
     setBusy(false);
-    if (updateError) return setError(passwordErrorText(updateError as PasswordAuthProblem, t));
+    if (updateError) {
+      const authProblem = updateError as PasswordAuthProblem;
+      if (
+        authProblem.code === "otp_expired" ||
+        authProblem.code === "session_expired" ||
+        authProblem.code === "session_not_found" ||
+        authProblem.code === "refresh_token_not_found"
+      ) {
+        setLinkFailure(authProblem.code === "session_not_found" ? "invalid" : "expired-or-used");
+        return;
+      }
+      return setError(passwordErrorText(authProblem, t));
+    }
     setNewPassword("");
     setConfirmation("");
     setSuccess(true);
@@ -705,7 +768,7 @@ function ResetPassword({ hasRecoverySession }: { hasRecoverySession: boolean }) 
   return (
     <AuthPageFrame>
       {invalidLink && !success ? (
-        <div className="auth-confirmation error-state" role="alert"><p>{t("recoveryLinkInvalid")}</p><Link className="primary-button" href="/forgot-password">{t("requestAnotherLink")}</Link><Link className="auth-text-link" href="/">{t("backToLogin")}</Link></div>
+        <div className="auth-confirmation error-state" role="alert"><p>{t(linkFailure === "expired-or-used" ? "recoveryLinkExpiredOrUsed" : "recoveryLinkInvalid")}</p><Link className="primary-button" href="/forgot-password">{t("requestAnotherLink")}</Link><Link className="auth-text-link" href="/">{t("backToLogin")}</Link></div>
       ) : success ? (
         <div className="auth-confirmation success-state" role="status"><p>{t("passwordChanged")}</p><button className="primary-button" onClick={() => router.replace("/")}>{t("continueToApp")}</button></div>
       ) : (

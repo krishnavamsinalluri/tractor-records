@@ -13,6 +13,7 @@ A private, mobile-friendly Next.js app for recording tractor work, customer bala
 ```bash
 NEXT_PUBLIC_SUPABASE_URL=https://your-project-id.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-or-publishable-key
+NEXT_PUBLIC_SITE_URL=https://tractor-records-xi.vercel.app
 ```
 
 The browser key is intentionally public and is restricted by RLS. Never put a Supabase `service_role` key in this project or in a `NEXT_PUBLIC_` variable.
@@ -31,7 +32,7 @@ For a Supabase project created before configurable work-type rates were added, r
 ## Deploy to Vercel
 
 1. Push the repository to a Git provider and import it into Vercel.
-2. In the Vercel project, add `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` under **Settings > Environment Variables** for Production (and Preview if needed).
+2. In the Vercel project, add `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, and `NEXT_PUBLIC_SITE_URL=https://tractor-records-xi.vercel.app` under **Settings > Environment Variables** for Production (and Preview if needed).
 3. Deploy. Vercel detects Next.js and runs `npm run build` automatically.
 4. On a phone, sign in and test **WhatsApp** and **SMS**. Both buttons open the relevant app with a prepared receipt; the user still taps Send. Saving has already completed before the share sheet appears.
 
@@ -39,13 +40,12 @@ For a Supabase project created before configurable work-type rates were added, r
 
 Open **Supabase → Authentication → URL Configuration** and configure:
 
-- **Site URL:** `https://tractor-records-vamsinalluri806-1788s-projects.vercel.app`
+- **Site URL:** `https://tractor-records-xi.vercel.app`
 - **Redirect URLs:**
   - `http://localhost:3000/reset-password`
-  - `https://tractor-records-vamsinalluri806-1788s-projects.vercel.app/reset-password`
-  - `https://tractor-app-vamsinalluri806-1788s-projects.vercel.app/reset-password` (the repository is also connected to this second Vercel project)
+  - `https://tractor-records-xi.vercel.app/reset-password`
 
-For local-only testing, the Site URL can temporarily be `http://localhost:3000`. Once production is in use, keep the production Site URL above and retain localhost as an additional redirect URL. The application sends the current origin as `redirectTo`, so only origins deliberately added to this allowlist can complete password recovery.
+Keep the production Site URL in place and retain localhost only as an additional redirect URL. The application sends the reset-password URL as `redirectTo`, so it must match this allowlist exactly. If the recovery email template was customized, keep `{{ .ConfirmationURL }}` as its link target; do not replace it with `{{ .SiteURL }}`.
 
 Password recovery uses the existing browser Supabase client, publishable key, and user session. It does not use a service-role key, create a new account, or store passwords in application tables or browser storage.
 
