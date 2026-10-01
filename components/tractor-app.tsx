@@ -155,7 +155,15 @@ function EmptyState({ icon: Icon, title, text }: {
 }) {
   return (
     <div className="empty-state">
-      <Icon size={36} />
+      <div className="empty-state-illustration">
+        <Image
+          src="/images/empty-records.png"
+          alt={title}
+          width={180}
+          height={120}
+          style={{ width: "auto", height: "auto", maxWidth: "180px" }}
+        />
+      </div>
       <strong>{title}</strong>
       <p>{text}</p>
     </div>
