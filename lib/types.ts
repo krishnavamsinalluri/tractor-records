@@ -13,6 +13,8 @@ export type WorkType = {
   user_id: string;
   name: string;
   active: boolean;
+  acre_rate?: number | null;
+  hour_rate?: number | null;
   created_at: string;
 };
 

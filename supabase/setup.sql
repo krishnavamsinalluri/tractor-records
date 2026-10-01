@@ -19,8 +19,14 @@ create table if not exists public.work_types (
   user_id uuid not null references auth.users(id) on delete cascade,
   name text not null check (length(trim(name)) > 0),
   active boolean not null default true,
+  acre_rate numeric(12,2) check (acre_rate is null or acre_rate >= 0),
+  hour_rate numeric(12,2) check (hour_rate is null or hour_rate >= 0),
   created_at timestamptz not null default now()
 );
+
+alter table public.work_types
+  add column if not exists acre_rate numeric(12,2) check (acre_rate is null or acre_rate >= 0),
+  add column if not exists hour_rate numeric(12,2) check (hour_rate is null or hour_rate >= 0);
 
 create unique index if not exists work_types_user_name_unique
   on public.work_types (user_id, lower(name));

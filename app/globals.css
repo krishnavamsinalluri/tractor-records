@@ -124,7 +124,7 @@ button {
   gap: 4px;
 }
 
-.desktop-nav button {
+.desktop-nav a {
   min-height: 48px;
   display: inline-flex;
   align-items: center;
@@ -136,9 +136,10 @@ button {
   color: var(--muted);
   font-weight: 750;
   cursor: pointer;
+  text-decoration: none;
 }
 
-.desktop-nav button.active {
+.desktop-nav a.active {
   color: var(--green-dark);
   background: var(--green-light);
 }
@@ -1189,24 +1190,31 @@ label select:focus {
 }
 
 .login-screen {
+  position: relative;
   min-height: 100dvh;
-  display: grid;
-  place-items: center start;
-  padding: clamp(24px, 6vw, 90px);
-  background: #18241b url("/Loginpage.png") center / cover no-repeat;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding: clamp(20px, 6vw, 80px);
+  overflow: hidden;
+  background: #102617 url('/images/dashboard-banner.png') no-repeat center center / cover;
 }
 
 .login-panel {
-  width: min(430px, 100%);
-  padding: 32px;
-  background: white;
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  box-shadow: 0 18px 55px rgba(31, 61, 41, .11);
+  position: relative;
+  z-index: 2;
+  width: min(420px, 100%);
+  padding: 24px 28px;
+  background: rgba(255, 255, 255, 0.96);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.9);
+  border-radius: 20px;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.4), 0 4px 18px rgba(0, 0, 0, 0.2);
 }
 
 .login-brand {
-  margin-bottom: 28px;
+  margin-bottom: 18px;
 }
 
 .login-brand h1 {
@@ -1221,15 +1229,120 @@ label select:focus {
 }
 
 .login-panel form {
-  display: grid;
-  gap: 17px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
 }
 
 .login-help {
-  margin: 18px 0 0;
+  margin: 10px 0 0;
   color: var(--muted);
   text-align: center;
   font-size: 12px;
+}
+
+.auth-text-link {
+  min-height: 28px;
+  margin-top: 2px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--green);
+  font-size: 14px;
+  font-weight: 700;
+  text-align: center;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.button-link {
+  width: 100%;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+}
+
+.auth-flow-panel {
+  width: min(480px, 100%);
+}
+
+.auth-flow-heading {
+  margin-bottom: 22px;
+}
+
+.auth-flow-heading h2,
+.settings-section-heading h2 {
+  margin: 0 0 6px;
+  font-size: 24px;
+}
+
+.auth-flow-heading p,
+.settings-section-heading p,
+.field-help {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.65;
+}
+
+.field-help {
+  display: block;
+  font-size: 14px;
+}
+
+.auth-confirmation {
+  display: grid;
+  gap: 18px;
+}
+
+.auth-confirmation p {
+  margin: 0;
+  padding: 16px;
+  border: 1px solid #a7d7b7;
+  border-radius: 12px;
+  background: #eef8f1;
+  color: #14532d;
+  font-weight: 750;
+  line-height: 1.65;
+}
+
+.auth-confirmation.error-state p {
+  border-color: #fecaca;
+  background: #fff1f2;
+  color: #991b1b;
+}
+
+.password-settings {
+  margin-top: 24px;
+}
+
+.settings-section-heading {
+  margin-bottom: 20px;
+}
+
+.password-settings-form {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.password-settings-form .full {
+  grid-column: 1 / -1;
+}
+
+.password-submit {
+  grid-column: 1 / -1;
+  justify-self: start;
+}
+
+.form-success {
+  margin: 0;
+  padding: 12px 14px;
+  border: 1px solid #86c99e;
+  border-radius: 10px;
+  background: #eef8f1;
+  color: #14532d;
+  font-weight: 800;
+  line-height: 1.55;
 }
 
 .setup-screen {
@@ -1333,7 +1446,7 @@ label select:focus {
     padding-bottom: env(safe-area-inset-bottom);
   }
 
-  .bottom-nav button {
+  .bottom-nav a {
     min-width: 0;
     min-height: 64px;
     display: flex;
@@ -1347,19 +1460,20 @@ label select:focus {
     font-size: 12px;
     font-weight: 700;
     line-height: 1.2;
+    text-decoration: none;
   }
 
-  .bottom-nav button svg {
+  .bottom-nav a svg {
     width: 21px;
     margin-bottom: 3px;
   }
 
-  .bottom-nav button span {
+  .bottom-nav a span {
     max-width: 100%;
     overflow-wrap: anywhere;
   }
 
-  .bottom-nav button.active {
+  .bottom-nav a.active {
     color: var(--green);
     background: #f1f7f2;
   }
@@ -1808,6 +1922,127 @@ label select:focus {
   }
 }
 
+/* Login background & responsive mobile banner layout */
+.login-bg-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.login-bg-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center center;
+}
+
+.login-bg-dim {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, rgba(0, 0, 0, 0.05) 0%, rgba(0, 0, 0, 0.2) 50%, rgba(0, 0, 0, 0.45) 100%);
+  pointer-events: none;
+}
+
+.login-layout {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  max-width: 420px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.login-panel,
+.auth-flow-panel {
+  width: 100%;
+  min-width: 0;
+}
+
+.mobile-only-banner {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .desktop-only-bg {
+    display: none !important;
+  }
+
+  .mobile-only-banner {
+    display: block;
+    position: relative;
+    width: 100%;
+    height: 180px;
+    border-radius: 18px;
+    overflow: hidden;
+    margin-bottom: 14px;
+    border: 1px solid rgba(22, 101, 52, 0.25);
+    box-shadow: 0 10px 30px rgba(15, 38, 20, 0.15);
+    background: #12331c;
+  }
+
+  .login-mobile-banner-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center center;
+  }
+
+  .login-mobile-banner-overlay {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(180deg, transparent 30%, rgba(7, 28, 14, 0.88) 100%);
+  }
+
+  .login-mobile-banner-text {
+    position: absolute;
+    left: 18px;
+    right: 18px;
+    bottom: 14px;
+    color: white;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    z-index: 1;
+  }
+
+  .login-mobile-banner-text strong {
+    font-family: "Noto Sans Telugu", "Nirmala UI", sans-serif;
+    font-size: 22px;
+    line-height: 1.25;
+  }
+
+  .login-mobile-banner-text span {
+    font-size: 13px;
+    color: #dcfce7;
+  }
+
+  .login-screen {
+    justify-content: flex-start;
+    align-items: center;
+    padding: 14px;
+    background: #eef4ed;
+    overflow-y: auto;
+  }
+
+  .login-layout {
+    max-width: 450px;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .login-panel,
+  .auth-flow-panel {
+    padding: 22px 18px;
+    border-radius: 18px;
+    background: white;
+    border: 1px solid var(--line);
+    box-shadow: 0 12px 35px rgba(22, 54, 30, 0.08);
+  }
+}
+
 /* Readable, farmer-friendly visual system */
 :root {
   --ink: #17251b;
@@ -1880,13 +2115,13 @@ select:focus-visible {
   font-size: 14px;
 }
 
-.desktop-nav button.active,
-.bottom-nav button.active {
+.desktop-nav a.active,
+.bottom-nav a.active {
   color: #ffffff;
   background: #166534;
 }
 
-.desktop-nav button,
+.desktop-nav a,
 .language-toggle {
   border-radius: 10px;
   font-size: 16px;
@@ -2179,6 +2414,30 @@ label select {
   gap: 10px;
 }
 
+.work-type-entry {
+  display: block !important;
+  padding: 18px 0;
+}
+
+.work-type-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+}
+
+.rate-editor {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto;
+  align-items: end;
+  gap: 12px;
+  margin-top: 14px;
+}
+
+.rate-editor .secondary-button {
+  min-height: 54px;
+}
+
 .type-status {
   margin-top: 0;
 }
@@ -2210,16 +2469,6 @@ label select {
   font-size: 15px;
 }
 
-.login-screen {
-  place-items: center;
-  background: #eef4ed;
-}
-
-.login-panel {
-  padding: 34px;
-  border-radius: 16px;
-}
-
 .login-help {
   font-size: 14px;
 }
@@ -2229,7 +2478,7 @@ label select {
     height: 82px;
   }
 
-  .bottom-nav button {
+  .bottom-nav a {
     font-size: 14px;
   }
 
@@ -2243,6 +2492,14 @@ label select {
 @media (max-width: 700px) {
   body {
     font-size: 16px;
+  }
+
+  .password-settings-form {
+    grid-template-columns: 1fr;
+  }
+
+  .password-submit {
+    width: 100%;
   }
 
   .topbar {
@@ -2351,21 +2608,22 @@ label select {
     justify-content: space-between;
   }
 
+  .work-type-summary {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .rate-editor {
+    grid-template-columns: 1fr;
+    width: 100%;
+  }
+
   .modal {
     border-radius: 16px 16px 0 0;
   }
 
   .modal-actions {
     grid-template-columns: 1fr;
-  }
-
-  .login-screen {
-    place-items: center;
-    padding: 16px;
-  }
-
-  .login-panel {
-    padding: 26px 20px;
   }
 }
 
