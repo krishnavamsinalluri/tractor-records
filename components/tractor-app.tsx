@@ -370,7 +370,7 @@ function TractorAppContent() {
   };
 
   return (
-    <div className="app-shell">
+    <div className={isCustomerDetail ? "app-shell" : "app-shell has-bottom-nav"}>
       <header className="topbar">
         <div className="brand">
           <span className="brand-mark"><Tractor size={25} /></span>
@@ -426,7 +426,7 @@ function TractorAppContent() {
         )}
       </main>
 
-      {!isCustomerDetail && (
+      {view === "dashboard" && (
         <button className="fab" onClick={openNewWork}>
           <Plus size={27} /><span>{t("addWork")}</span>
         </button>
@@ -553,8 +553,7 @@ function LoginIllustration() {
           className="login-mobile-banner-image"
           src="/images/dashboard-banner.png"
           alt={t("loginIllustrationAlt")}
-          width={1200}
-          height={600}
+          fill
           priority
           sizes="100vw"
         />
@@ -744,9 +743,9 @@ function Dashboard({ works, total, received, loading, onAdd, onEdit, onShare }: 
         <button className="desktop-add primary-button" onClick={onAdd}><Plus size={21} /> {t("addWork")}</button>
       </section>
       <section className="stats-grid">
-        <article className="stat total"><span><IndianRupee /></span><p>{t("totalWork")}</p><strong>{money(total)}</strong></article>
-        <article className="stat received"><span><WalletCards /></span><p>{t("received")}</p><strong>{money(received)}</strong></article>
         <article className="stat pending"><span><ClipboardList /></span><p>{t("pending")}</p><strong>{money(Math.max(0, total - received))}</strong></article>
+        <article className="stat received"><span><WalletCards /></span><p>{t("received")}</p><strong>{money(received)}</strong></article>
+        <article className="stat total"><span><IndianRupee /></span><p>{t("totalWork")}</p><strong>{money(total)}</strong></article>
       </section>
       <section className="section-block">
         <div className="section-title"><h2>{t("recentWork")}</h2><span>{t("recordCount", { count: works.length })}</span></div>
@@ -761,20 +760,19 @@ function Dashboard({ works, total, received, loading, onAdd, onEdit, onShare }: 
 function WorkRow({ work, onEdit, onShare }: { work: WorkRecord; onEdit: () => void; onShare: () => void }) {
   const { language, t } = useLanguage();
   const balance = balanceFor(work);
-  const received = paidFor(work);
   const workDate = new Date(`${work.work_date}T00:00:00`);
   const unit = work.charge_basis === "hour" ? t("hoursWorked") : t("acres");
-  const status = balance === 0 ? "paid" : received > 0 ? "partial" : "due";
-  const statusLabel = status === "paid" ? t("paid") : status === "partial" ? t("partiallyPaid") : t("paymentDue");
   const fullDate = workDate.toLocaleDateString(language === "te" ? "te-IN-u-nu-latn" : "en-IN", { day: "numeric", month: "short", year: "numeric" });
   return (
     <article className="work-row">
-      <div className="work-date"><strong>{workDate.getDate()}</strong><span>{workDate.toLocaleDateString(language === "te" ? "te-IN-u-nu-latn" : "en-IN", { month: "short" })}</span></div>
       <div className="work-main">
         <h3>{work.customer?.name ?? t("farmer")}</h3>
         <p className="work-type-name">{displayWorkType(work.work_type_name, language)}</p>
-        <div className="work-details-grid"><span><b>{t("workDate")}:</b> {fullDate}</span><span><b>{t("sharedQuantity")}:</b> {work.quantity} {unit}</span><span><b>{t("receiptRate")}:</b> {money(work.rate)}</span><span><b>{t("balanceDue")}:</b> {money(balance)}</span></div>
-        <span className={`payment-status ${status}`}>{statusLabel}</span>
+        <p className="work-summary">{fullDate} · {work.quantity} {unit} · {money(work.rate)}</p>
+      </div>
+      <div className={`work-money${balance > 0 ? " due" : " paid"}`}>
+        <strong>{money(balance > 0 ? balance : Number(work.total))}</strong>
+        <span>{balance > 0 ? t("balanceDue") : t("paid")}</span>
       </div>
       <div className="row-actions"><button className="row-action-button" onClick={onEdit}><Pencil size={18} /> {t("editWork")}</button><button className="row-action-button" onClick={onShare}><MessageCircle size={18} /> {t("shareReceipt")}</button></div>
     </article>
@@ -842,12 +840,13 @@ function CustomerDetail({ customer, works, onBack, onEdit, onShare, onAddPayment
         {works.length ? (
           <div className="history-list">{works.map((work) => (
             <article className="history-item" key={work.id}>
-              <div className="history-head"><div><strong>{displayWorkType(work.work_type_name, language)}</strong><span>{dateLabel(work.work_date)}</span></div><strong>{money(work.total)}</strong></div>
-              <p>{work.quantity} {work.charge_basis === "hour" ? t("hoursWorked") : t("acres")} × {money(work.rate)}</p>
+              <div className="history-head">
+                <div><strong>{displayWorkType(work.work_type_name, language)}</strong><span>{dateLabel(work.work_date)} · {work.quantity} {work.charge_basis === "hour" ? t("hoursWorked") : t("acres")} × {money(work.rate)}</span></div>
+                <div className={`work-money${balanceFor(work) > 0 ? " due" : " paid"}`}><strong>{money(balanceFor(work))}</strong><span>{balanceFor(work) > 0 ? t("balanceDue") : t("paid")}</span></div>
+              </div>
               {(work.payments ?? []).length > 0 && <h4 className="payment-title">{t("payments")}</h4>}
               <div className="payment-lines">{(work.payments ?? []).map((payment) => <div key={payment.id}><span>{dateLabel(payment.payment_date)} · {methodLabel(payment.method)}</span><strong>+{money(payment.amount)}</strong></div>)}</div>
               <div className="history-footer">
-                <span>{t("balanceDue")} <b>{money(balanceFor(work))}</b></span>
                 <div><button className="row-action-button" onClick={() => onEdit(work)}><Pencil size={18} /> {t("editWork")}</button><button className="row-action-button" onClick={() => onShare(work)}><MessageCircle size={18} /> {t("shareReceipt")}</button>{balanceFor(work) > 0 && <button className="small-action" onClick={() => onAddPayment(work)}><CirclePlus size={18} /> {t("addPayment")}</button>}</div>
               </div>
             </article>
