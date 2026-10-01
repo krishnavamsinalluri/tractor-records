@@ -29,6 +29,10 @@ Open `http://localhost:3000`, sign in with the account created above, and add a 
 
 For a Supabase project created before configurable work-type rates were added, run [`supabase/add_work_type_rates.sql`](supabase/add_work_type_rates.sql) once in the SQL Editor. Then set each work type's acre and hourly rates from the **Work types** tab. New work records default to per-acre billing and automatically use the configured rate; existing records retain their saved billing unit and rate.
 
+For an existing project, also run [`supabase/add_customer_payment_rpc.sql`](supabase/add_customer_payment_rpc.sql) once in the SQL Editor. It adds the authenticated `record_customer_payment` RPC used to allocate one customer payment across pending work atomically, oldest first. Existing payment rows remain unchanged.
+
+After applying it, [`supabase/verify_customer_payment_rpc.sql`](supabase/verify_customer_payment_rpc.sql) can be run in the SQL Editor to exercise partial allocation, full allocation, overpayment rejection, and duplicate-request handling. The verification transaction rolls back all of its fixture data.
+
 ## Deploy to Vercel
 
 1. Push the repository to a Git provider and import it into Vercel.

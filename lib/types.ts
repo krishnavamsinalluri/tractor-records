@@ -25,6 +25,7 @@ export type Payment = {
   payment_date: string;
   amount: number;
   method: string;
+  payment_request_id?: string | null;
   created_at: string;
 };
 

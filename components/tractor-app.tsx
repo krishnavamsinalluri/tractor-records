@@ -451,6 +451,7 @@ function TractorAppContent() {
             onEdit={openEditWork}
             onShare={openShareWork}
             onAddPayment={(work) => openDialog("add-payment", work.id)}
+            onAddCustomerPayment={() => openDialog("customer-payment")}
             onShareAll={() => openDialog("share-all")}
           />
         ) : isCustomerDetail ? (
@@ -465,6 +466,8 @@ function TractorAppContent() {
             onAdd={openNewWork}
             onEdit={openEditWork}
             onShare={openShareWork}
+            onAddPayment={(work) => openDialog("add-payment", work.id)}
+            onOpenCustomer={openCustomer}
           />
         ) : view === "customers" ? (
           <Customers customers={customers} works={works} query={customerQuery} onQueryChange={setCustomerQuery} onSelect={openCustomer} />
@@ -510,6 +513,7 @@ function TractorAppContent() {
       )}
       {dialog === "share-work" && dialogWork && <ShareSheet work={dialogWork} onClose={closeDialog} />}
       {dialog === "add-payment" && dialogWork && <PaymentModal work={dialogWork} onClose={closeDialog} onSaved={() => { closeDialog(); void loadData(); }} setNotice={setNotice} />}
+      {dialog === "customer-payment" && selectedCustomer && <CustomerPaymentModal customer={selectedCustomer} works={works.filter((work) => work.customer_id === selectedCustomer.id)} onClose={closeDialog} onSaved={() => { closeDialog(); void loadData(); }} setNotice={setNotice} />}
       {dialog === "share-all" && selectedCustomer && <CustomerShareSheet customer={selectedCustomer} works={works.filter((work) => work.customer_id === selectedCustomer.id)} onClose={closeDialog} />}
     </div>
   );
@@ -788,7 +792,7 @@ function ResetPassword({ hasRecoverySession }: { hasRecoverySession: boolean }) 
   );
 }
 
-function Dashboard({ works, total, received, loading, onAdd, onEdit, onShare }: {
+function Dashboard({ works, total, received, loading, onAdd, onEdit, onShare, onAddPayment, onOpenCustomer }: {
   works: WorkRecord[];
   total: number;
   received: number;
@@ -796,6 +800,8 @@ function Dashboard({ works, total, received, loading, onAdd, onEdit, onShare }: 
   onAdd: () => void;
   onEdit: (work: WorkRecord) => void;
   onShare: (work: WorkRecord) => void;
+  onAddPayment: (work: WorkRecord) => void;
+  onOpenCustomer: (customer: Customer) => void;
 }) {
   const { t } = useLanguage();
   const recent = works.slice(0, 6);
@@ -813,14 +819,31 @@ function Dashboard({ works, total, received, loading, onAdd, onEdit, onShare }: 
       <section className="section-block">
         <div className="section-title"><h2>{t("recentWork")}</h2><span>{t("recordCount", { count: works.length })}</span></div>
         {loading ? <div className="loading-line">{t("loading")}</div> : recent.length ? (
-          <div className="record-list">{recent.map((work) => <WorkRow key={work.id} work={work} onEdit={() => onEdit(work)} onShare={() => onShare(work)} />)}</div>
+          <div className="record-list">{recent.map((work) => (
+            <WorkRow
+              key={work.id}
+              work={work}
+              hasPreviousWork={works.some((candidate) => candidate.customer_id === work.customer_id && candidate.id !== work.id)}
+              onEdit={() => onEdit(work)}
+              onShare={() => onShare(work)}
+              onAddPayment={() => onAddPayment(work)}
+              onOpenCustomer={() => work.customer && onOpenCustomer(work.customer)}
+            />
+          ))}</div>
         ) : <EmptyState icon={ClipboardList} title={t("noWork")} text={t("noWorkHelp")} />}
       </section>
     </>
   );
 }
 
-function WorkRow({ work, onEdit, onShare }: { work: WorkRecord; onEdit: () => void; onShare: () => void }) {
+function WorkRow({ work, hasPreviousWork, onEdit, onShare, onAddPayment, onOpenCustomer }: {
+  work: WorkRecord;
+  hasPreviousWork: boolean;
+  onEdit: () => void;
+  onShare: () => void;
+  onAddPayment: () => void;
+  onOpenCustomer: () => void;
+}) {
   const { language, t } = useLanguage();
   const balance = balanceFor(work);
   const workDate = new Date(`${work.work_date}T00:00:00`);
@@ -829,15 +852,17 @@ function WorkRow({ work, onEdit, onShare }: { work: WorkRecord; onEdit: () => vo
   return (
     <article className="work-row">
       <div className="work-main">
-        <h3>{work.customer?.name ?? t("farmer")}</h3>
+        {work.customer ? <button type="button" className="work-customer-link" onClick={onOpenCustomer}>{work.customer.name}</button> : <h3>{t("farmer")}</h3>}
+        <span className="work-customer-phone">{work.customer?.phone || t("noPhone")}</span>
         <p className="work-type-name">{displayWorkType(work.work_type_name, language)}</p>
         <p className="work-summary">{fullDate} · {work.quantity} {unit} · {money(work.rate)}</p>
       </div>
       <div className={`work-money${balance > 0 ? " due" : " paid"}`}>
-        <strong>{money(balance > 0 ? balance : Number(work.total))}</strong>
+        <strong>{money(balance)}</strong>
         <span>{balance > 0 ? t("balanceDue") : t("paid")}</span>
       </div>
-      <div className="row-actions"><button className="row-action-button" onClick={onEdit}><Pencil size={18} /> {t("editWork")}</button><button className="row-action-button" onClick={onShare}><MessageCircle size={18} /> {t("shareReceipt")}</button></div>
+      <div className="work-card-actions"><button className="row-action-button" onClick={onEdit}><Pencil size={17} /> {t("editWork")}</button><button className="row-action-button" onClick={onShare}><MessageCircle size={17} /> {t("shareReceipt")}</button>{balance > 0 && <button className="small-action payment-action" onClick={onAddPayment}><CirclePlus size={18} /> {t("addPayment")}</button>}</div>
+      {work.customer && (hasPreviousWork ? <button type="button" className="history-link" onClick={onOpenCustomer}>{t("viewOldWorkHistory")} <ChevronRight size={18} /></button> : <p className="no-history-note">{t("noOldWorkHistory")}</p>)}
     </article>
   );
 }
@@ -874,47 +899,60 @@ function Customers({ customers, works, query, onQueryChange, onSelect }: {
   );
 }
 
-function CustomerDetail({ customer, works, onBack, onEdit, onShare, onAddPayment, onShareAll }: {
+function CustomerDetail({ customer, works, onBack, onEdit, onShare, onAddPayment, onAddCustomerPayment, onShareAll }: {
   customer: Customer;
   works: WorkRecord[];
   onBack: () => void;
   onEdit: (work: WorkRecord) => void;
   onShare: (work: WorkRecord) => void;
   onAddPayment: (work: WorkRecord) => void;
+  onAddCustomerPayment: () => void;
   onShareAll: () => void;
 }) {
   const { language, t } = useLanguage();
   const total = works.reduce((sum, work) => sum + Number(work.total), 0);
   const received = works.reduce((sum, work) => sum + paidFor(work), 0);
+  const balance = works.reduce((sum, work) => sum + balanceFor(work), 0);
   const dateLabel = (value: string) => new Date(`${value}T00:00:00`).toLocaleDateString(language === "te" ? "te-IN-u-nu-latn" : "en-IN", { day: "numeric", month: "short", year: "numeric" });
   const methodLabel = (method: string) => t(({ Cash: "cash", UPI: "upi", "Bank transfer": "bankTransfer", Other: "other" }[method] ?? "other") as MessageKey);
 
   return (
     <>
       <button className="back-button" onClick={onBack}><ArrowLeft size={21} /> {t("back")}</button>
-      <section className="customer-hero"><div className="avatar large-avatar">{customer.name.slice(0, 1).toUpperCase()}</div><div className="customer-identity"><h1>{customer.name}</h1><p>{customer.phone || t("noPhone")}</p></div><button className="primary-button share-customer-button" onClick={onShareAll}><MessageCircle size={20} /> {t("shareAllDetails")}</button></section>
+      <section className="customer-hero"><div className="avatar large-avatar">{customer.name.slice(0, 1).toUpperCase()}</div><div className="customer-identity"><h1>{customer.name}</h1><p>{customer.phone || t("noPhone")}</p></div><div className="customer-primary-actions"><button className="customer-share-action" onClick={onShareAll}><span className="customer-action-content"><MessageCircle size={20} aria-hidden="true" /><span className="customer-action-label">{t("shareDetails")}</span></span></button>{balance > 0 && <button className="customer-payment-action" onClick={onAddCustomerPayment}><span className="customer-action-content"><CirclePlus size={20} aria-hidden="true" /><span className="customer-action-label">{t("addPayment")}</span></span></button>}</div></section>
       <section className="mini-stats">
         <div><span>{t("totalAmount")}</span><strong>{money(total)}</strong></div>
         <div><span>{t("received")}</span><strong>{money(received)}</strong></div>
-        <div><span>{t("balanceDue")}</span><strong className="due-text">{money(total - received)}</strong></div>
+        <div><span>{t("balanceDue")}</span><strong className="due-text">{money(balance)}</strong></div>
       </section>
-      <section className="section-block">
-        <div className="section-title"><h2>{t("workPaymentHistory")}</h2></div>
+      <section className="section-block history-section">
+        <div className="section-title"><h2>{t("workPaymentHistory")}</h2>{works.length > 0 && <span>{t("recordCount", { count: works.length })}</span>}</div>
         {works.length ? (
-          <div className="history-list">{works.map((work) => (
+          <div className="history-list">{works.map((work) => {
+            const balance = balanceFor(work);
+            const paid = paidFor(work);
+            const statusClass = balance <= 0 ? "paid" : paid > 0 ? "partial" : "due";
+            const statusLabel = balance <= 0 ? t("paid") : paid > 0 ? t("partiallyPaid") : t("paymentDue");
+            return (
             <article className="history-item" key={work.id}>
               <div className="history-head">
-                <div><strong>{displayWorkType(work.work_type_name, language)}</strong><span>{dateLabel(work.work_date)} · {work.quantity} {work.charge_basis === "hour" ? t("hoursWorked") : t("acres")} × {money(work.rate)}</span></div>
-                <div className={`work-money${balanceFor(work) > 0 ? " due" : " paid"}`}><strong>{money(balanceFor(work))}</strong><span>{balanceFor(work) > 0 ? t("balanceDue") : t("paid")}</span></div>
+                <strong>{displayWorkType(work.work_type_name, language)}</strong>
+                <span className={`payment-status ${statusClass}`}>{statusLabel}</span>
+              </div>
+              <div className="history-details">
+                <p><span>{t("workDate")}</span><strong>{dateLabel(work.work_date)}</strong></p>
+                <p><span>{t("sharedQuantity")}</span><strong>{work.quantity} {work.charge_basis === "hour" ? t("hoursWorked") : t("acres")}</strong></p>
+                <p><span>{t("receiptRate")}</span><strong>{money(work.rate)}</strong></p>
+                <p><span>{t("remainingBalance")}</span><strong className={balance > 0 ? "due-text" : "paid-text"}>{money(balance)}</strong></p>
               </div>
               {(work.payments ?? []).length > 0 && <h4 className="payment-title">{t("payments")}</h4>}
               <div className="payment-lines">{(work.payments ?? []).map((payment) => <div key={payment.id}><span>{dateLabel(payment.payment_date)} · {methodLabel(payment.method)}</span><strong>+{money(payment.amount)}</strong></div>)}</div>
               <div className="history-footer">
-                <div><button className="row-action-button" onClick={() => onEdit(work)}><Pencil size={18} /> {t("editWork")}</button><button className="row-action-button" onClick={() => onShare(work)}><MessageCircle size={18} /> {t("shareReceipt")}</button>{balanceFor(work) > 0 && <button className="small-action" onClick={() => onAddPayment(work)}><CirclePlus size={18} /> {t("addPayment")}</button>}</div>
+                <div className="work-card-actions"><button className="row-action-button" onClick={() => onEdit(work)}><Pencil size={17} /> {t("editWork")}</button><button className="row-action-button" onClick={() => onShare(work)}><MessageCircle size={17} /> {t("shareReceipt")}</button>{balance > 0 && <button className="small-action payment-action" onClick={() => onAddPayment(work)}><CirclePlus size={18} /> {t("addPayment")}</button>}</div>
               </div>
             </article>
-          ))}</div>
-        ) : <EmptyState icon={ClipboardList} title={t("noFarmerWork")} text={t("noFarmerWorkHelp")} />}
+          );})}</div>
+        ) : <EmptyState icon={ClipboardList} title={t("noOldWorkHistory")} text={t("noFarmerWorkHelp")} />}
       </section>
     </>
   );
@@ -1271,6 +1309,84 @@ function PaymentModal({ work, onClose, onSaved, setNotice }: { work: WorkRecord;
           <label><FieldLabel label={t("amount")} /><div className="money-input"><span>₹</span><input type="number" min="0.01" max={balance} step="0.01" inputMode="decimal" value={amount} onChange={(event) => setAmount(event.target.value)} required /></div></label>
           <label><FieldLabel label={t("paymentMethod")} /><select value={method} onChange={(event) => { setMethod(event.target.value); setError(""); }} onInvalid={(event) => { event.preventDefault(); setError(t("choosePaymentMethod")); }} required><option value="" disabled>{t("selectPaymentMethod")}</option><option value="Cash">{t("cash")}</option><option value="UPI">{t("upi")}</option><option value="Bank transfer">{t("bankTransfer")}</option><option value="Other">{t("other")}</option></select></label>
           {error && <p className="form-error">{error}</p>}
+          <button className="primary-button" disabled={busy}>{busy ? t("saving") : t("savePayment")}</button>
+        </form>
+      </section>
+    </div>
+  );
+}
+
+function CustomerPaymentModal({ customer, works, onClose, onSaved, setNotice }: {
+  customer: Customer;
+  works: WorkRecord[];
+  onClose: () => void;
+  onSaved: () => void;
+  setNotice: (notice: Notice) => void;
+}) {
+  const { t } = useLanguage();
+  const balance = works.reduce((sum, work) => sum + balanceFor(work), 0);
+  const initialAmount = String(balance);
+  const [amount, setAmount] = useState(initialAmount);
+  const [date, setDate] = useState(today());
+  const [method, setMethod] = useState("");
+  const [error, setError] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [requestId] = useState(() => crypto.randomUUID());
+  const submitting = useRef(false);
+  const enteredAmount = Number(amount);
+  const remainingBalance = Math.max(0, balance - (Number.isFinite(enteredAmount) ? enteredAmount : 0));
+  const isDirty = amount !== initialAmount || date !== today() || method !== "";
+  const requestClose = useUnsavedChangesGuard(isDirty && !busy);
+  const closeWithConfirmation = () => requestClose(onClose);
+
+  const submit = async (event: FormEvent) => {
+    event.preventDefault();
+    if (submitting.current) return;
+    setError("");
+    const value = Number(amount);
+    if (!method) return setError(t("choosePaymentMethod"));
+    if (!Number.isFinite(value) || value <= 0) return setError(t("paymentPositive"));
+    if (value > balance) return setError(t("paymentTooHigh", { amount: money(balance) }));
+
+    submitting.current = true;
+    setBusy(true);
+    const { error: saveError } = await getSupabase().rpc("record_customer_payment", {
+      p_customer_id: customer.id,
+      p_amount: value,
+      p_payment_date: date,
+      p_method: method,
+      p_request_id: requestId,
+    });
+    setBusy(false);
+    submitting.current = false;
+
+    if (saveError) {
+      if (saveError.message.toLowerCase().includes("outstanding customer balance")) {
+        setError(t("customerBalanceChanged"));
+      } else if (saveError.message.toLowerCase().includes("idempotency")) {
+        setError(t("paymentRequestConflict"));
+      } else {
+        setError(friendlyError(saveError.message, t));
+      }
+      return;
+    }
+
+    setNotice({ tone: "success", text: t("customerPaymentSaved") });
+    onSaved();
+  };
+
+  return (
+    <div className="modal-backdrop top-layer">
+      <section className="modal compact-modal" role="dialog" aria-modal="true" aria-labelledby="customer-payment-title">
+        <div className="modal-head"><div><p className="eyebrow">{customer.name}</p><h2 id="customer-payment-title">{t("addPayment")}</h2></div><IconButton icon={X} label={t("close")} onClick={closeWithConfirmation} /></div>
+        <div className="customer-payment-balance"><span>{t("customerOutstandingBalance")}</span><strong>{money(balance)}</strong></div>
+        <form onSubmit={submit} className="stack-form">
+          <label><FieldLabel label={t("amountReceived")} /><div className="money-input"><span>₹</span><input type="number" min="0.01" max={balance} step="0.01" inputMode="decimal" value={amount} onChange={(event) => { setAmount(event.target.value); setError(""); }} required autoFocus /></div></label>
+          <label><FieldLabel label={t("paymentDate")} /><input type="date" value={date} onChange={(event) => setDate(event.target.value)} required /></label>
+          <label><FieldLabel label={t("paymentMethod")} /><select value={method} onChange={(event) => { setMethod(event.target.value); setError(""); }} onInvalid={(event) => { event.preventDefault(); setError(t("choosePaymentMethod")); }} required><option value="" disabled>{t("selectPaymentMethod")}</option><option value="Cash">{t("cash")}</option><option value="UPI">{t("upi")}</option><option value="Bank transfer">{t("bankTransfer")}</option><option value="Other">{t("other")}</option></select></label>
+          <div className="customer-payment-remaining"><span>{t("remainingAfterPayment")}</span><strong>{money(remainingBalance)}</strong></div>
+          <p className="field-help">{t("oldestWorkAllocationHelp")}</p>
+          {error && <p className="form-error" role="alert">{error}</p>}
           <button className="primary-button" disabled={busy}>{busy ? t("saving") : t("savePayment")}</button>
         </form>
       </section>
