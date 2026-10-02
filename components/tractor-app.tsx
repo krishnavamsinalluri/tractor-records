@@ -5,27 +5,39 @@ import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import {
-  ArrowLeft,
-  ChevronRight,
-  CirclePlus,
-  ClipboardList,
-  IndianRupee,
-  Eye,
-  EyeOff,
-  Languages,
-  LayoutDashboard,
-  LogOut,
-  MessageCircle,
-  Pencil,
-  Phone,
-  Plus,
+  HouseDoor,
+  HouseDoorFill,
+  People,
+  PeopleFill,
+  PlusLg,
+  ClockHistory,
+  Gear,
+  GearFill,
+  TelephoneFill,
+  Whatsapp,
   Search,
-  Settings,
-  Tractor,
-  Users,
-  WalletCards,
+  ChevronRight,
+  ArrowLeft,
+  PencilSquare,
+  CheckCircleFill,
+  CashCoin,
+  CashStack,
+  Wallet2,
+  BoxArrowRight,
+  KeyFill,
+  EyeFill,
+  EyeSlashFill,
   X,
-} from "lucide-react";
+  Dash,
+  Plus,
+  Translate,
+  Sliders,
+  PersonFill,
+  Phone,
+  Truck,
+  EnvelopeFill,
+  LockFill,
+} from "react-bootstrap-icons";
 import { FormEvent, useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { IconButton } from "@/components/icon-button";
 import {
@@ -34,6 +46,7 @@ import {
   useLanguage,
   type MessageKey,
 } from "@/components/language-provider";
+import { WorkTypeIcon, TractorBrandIcon, getWorkTypeMeta } from "@/components/work-type-icon";
 import { getPasswordRecoveryRedirectUrl, getSupabase, hasSupabaseConfig } from "@/lib/supabase";
 import type { ChargeBasis, Customer, Payment, WorkRecord, WorkType } from "@/lib/types";
 
@@ -127,9 +140,9 @@ function useUnsavedChangesGuard(isDirty: boolean) {
 }
 
 const DEFAULT_WORK_TYPES = [
-  "Ploughing / దుక్కి",
   "Cultivator / కల్టివేటర్",
   "Rotavator / రోటావేటర్",
+  "Ploughing / దుక్కి",
   "Transport / రవాణా",
 ];
 
@@ -141,6 +154,7 @@ const money = (value: number) =>
     minimumFractionDigits: 0,
     maximumFractionDigits: 2,
   }).format(value);
+
 const paidFor = (work: WorkRecord) =>
   (work.payments ?? []).reduce((sum, payment) => sum + Number(payment.amount), 0);
 const balanceFor = (work: WorkRecord) => Math.max(0, Number(work.total) - paidFor(work));
@@ -174,14 +188,13 @@ function LanguageToggle({ compact = false }: { compact?: boolean }) {
       aria-label={t("languageLabel")}
       title={t("languageLabel")}
     >
-      <Languages size={20} />
+      <Translate size={18} />
       <span>{t("language")}</span>
     </button>
   );
 }
 
 function EmptyState({ title, text }: {
-  icon: typeof ClipboardList;
   title: string;
   text: string;
 }) {
@@ -191,9 +204,9 @@ function EmptyState({ title, text }: {
         <Image
           src="/images/empty-records.png"
           alt={title}
-          width={180}
-          height={120}
-          style={{ width: "auto", height: "auto", maxWidth: "180px" }}
+          width={160}
+          height={100}
+          style={{ width: "auto", height: "auto", maxWidth: "160px" }}
         />
       </div>
       <strong>{title}</strong>
@@ -212,7 +225,8 @@ function TractorAppContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [session, setSession] = useState<Session | null>(null);
-  const [authLoading, setAuthLoading] = useState(hasSupabaseConfig);
+  const [mounted, setMounted] = useState(false);
+  const [authLoading, setAuthLoading] = useState(true);
   const [passwordRecovery, setPasswordRecovery] = useState(false);
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [workTypes, setWorkTypes] = useState<WorkType[]>([]);
@@ -230,11 +244,16 @@ function TractorAppContent() {
   const customerId = customerMatch ? decodeURIComponent(customerMatch[1]) : null;
   const selectedCustomer = customerId ? customers.find((customer) => customer.id === customerId) : undefined;
   const isCustomerDetail = customerId !== null;
+
+  // Determine active view
   const view = isCustomerDetail || pathname === "/customers"
     ? "customers"
-    : pathname === "/work-types"
-      ? "settings"
-      : "dashboard";
+    : pathname === "/pending"
+      ? "pending"
+      : pathname === "/settings" || pathname === "/work-types"
+        ? "settings"
+        : "dashboard";
+
   const dialog = searchParams.get("dialog");
   const dialogWorkId = searchParams.get("workId");
   const dialogWork = works.find((work) => work.id === dialogWorkId) ??
@@ -361,8 +380,17 @@ function TractorAppContent() {
     return acc;
   }, { total: 0, received: 0 }), [works]);
 
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  if (!mounted || authLoading) return (
+    <div className="center-screen" role="status" aria-live="polite">
+      <div className="spinner" />
+      <p>{t("checkingSession")}</p>
+    </div>
+  );
   if (!hasSupabaseConfig) return <SetupRequired />;
-  if (authLoading) return <div className="center-screen" role="status" aria-live="polite"><div className="spinner" /><p>{t("checkingSession")}</p></div>;
   if (pathname === "/forgot-password") return <ForgotPassword />;
   if (pathname === "/reset-password") return <ResetPassword hasRecoverySession={Boolean(session) && passwordRecovery} />;
   if (!session) return <Login />;
@@ -377,7 +405,16 @@ function TractorAppContent() {
     dialogOpenedInApp.current = true;
     router.push(dialogUrl(name, workId), { scroll: false });
   };
-  const openNewWork = () => openDialog("add-work");
+  const openNewWork = (forCustomerId?: string) => {
+    if (forCustomerId) {
+      const params = new URLSearchParams();
+      params.set("dialog", "add-work");
+      params.set("customerId", forCustomerId);
+      router.push(`${pathname}?${params.toString()}`, { scroll: false });
+    } else {
+      openDialog("add-work");
+    }
+  };
   const openEditWork = (work: WorkRecord) => {
     openDialog("edit-work", work.id);
   };
@@ -418,27 +455,24 @@ function TractorAppContent() {
 
   return (
     <div className={isCustomerDetail ? "app-shell" : "app-shell has-bottom-nav"}>
+      {/* Top Header */}
       <header className="topbar">
         <div className="brand">
-          <span className="brand-mark"><Tractor size={25} /></span>
-          <span><strong>{t("appName")}</strong><small>{t("appSubtitle")}</small></span>
+          <span className="brand-mark"><TractorBrandIcon size={28} color="#ffffff" /></span>
+          <div className="brand-text">
+            <strong>{t("appName")}</strong>
+            <small>{t("greeting")}</small>
+          </div>
         </div>
-        {!isCustomerDetail && (
-          <nav className="desktop-nav" aria-label={t("appSubtitle")}>
-            <Link className={view === "dashboard" ? "active" : ""} href="/"><LayoutDashboard size={20} /> {t("home")}</Link>
-            <Link className={view === "customers" ? "active" : ""} href="/customers"><Users size={20} /> {t("customers")}</Link>
-            <Link className={view === "settings" ? "active" : ""} href="/work-types"><Settings size={20} /> {t("workTypes")}</Link>
-          </nav>
-        )}
         <div className="topbar-actions">
           <LanguageToggle compact />
-          <IconButton icon={LogOut} label={t("signOut")} onClick={() => void signOut()} />
+          <IconButton icon={BoxArrowRight} label={t("signOut")} onClick={() => void signOut()} />
         </div>
       </header>
 
       {notice && (
         <button className={`notice ${notice.tone}`} onClick={() => setNotice(null)}>
-          <span>{notice.text}</span><X size={19} />
+          <span>{notice.text}</span><X size={20} />
         </button>
       )}
 
@@ -448,6 +482,7 @@ function TractorAppContent() {
             customer={selectedCustomer}
             works={works.filter((work) => work.customer_id === selectedCustomer.id)}
             onBack={goBackFromCustomer}
+            onAddWork={() => openNewWork(selectedCustomer.id)}
             onEdit={openEditWork}
             onShare={openShareWork}
             onAddPayment={(work) => openDialog("add-payment", work.id)}
@@ -455,66 +490,199 @@ function TractorAppContent() {
             onShareAll={() => openDialog("share-all")}
           />
         ) : isCustomerDetail ? (
-          loading ? <div className="center-screen"><div className="spinner" /><p>{t("loading")}</p></div> :
-            <><button className="back-button" onClick={goBackFromCustomer}><ArrowLeft size={21} /> {t("back")}</button><EmptyState icon={Users} title={t("noFarmers")} text={t("noFarmersHelp")} /></>
+          loading ? (
+            <div className="center-screen"><div className="spinner" /><p>{t("loading")}</p></div>
+          ) : (
+            <>
+              <button className="back-button" onClick={goBackFromCustomer}>
+                <ArrowLeft size={20} /> {t("back")}
+              </button>
+              <EmptyState title={t("noFarmers")} text={t("noFarmersHelp")} />
+            </>
+          )
         ) : view === "dashboard" ? (
           <Dashboard
+            customers={customers}
             works={works}
             total={totals.total}
             received={totals.received}
             loading={loading}
-            onAdd={openNewWork}
+            onAdd={() => openNewWork()}
             onEdit={openEditWork}
             onShare={openShareWork}
             onAddPayment={(work) => openDialog("add-payment", work.id)}
             onOpenCustomer={openCustomer}
+            onViewAllDues={() => router.push("/pending")}
           />
         ) : view === "customers" ? (
-          <Customers customers={customers} works={works} query={customerQuery} onQueryChange={setCustomerQuery} onSelect={openCustomer} />
+          <Customers
+            customers={customers}
+            works={works}
+            query={customerQuery}
+            onQueryChange={setCustomerQuery}
+            onSelect={openCustomer}
+            onAddNewCustomer={() => openDialog("add-customer")}
+          />
+        ) : view === "pending" ? (
+          <PendingDuesView
+            customers={customers}
+            works={works}
+            onSelect={openCustomer}
+            onAddNewWork={() => openNewWork()}
+          />
         ) : (
-          <WorkTypeSettings workTypes={workTypes} onRefresh={loadData} setNotice={setNotice} />
+          <SettingsView
+            session={session}
+            workTypes={workTypes}
+            onRefresh={loadData}
+            setNotice={setNotice}
+            onSignOut={() => void signOut()}
+            onOpenWorkTypes={() => openDialog("work-types")}
+          />
         )}
       </main>
 
-      {view === "dashboard" && (
-        <button className="fab" onClick={openNewWork}>
-          <Plus size={27} /><span>{t("addWork")}</span>
-        </button>
-      )}
-
+      {/* Floating Bottom Navigation */}
       {!isCustomerDetail && (
         <nav className="bottom-nav" aria-label={t("appSubtitle")}>
           <Link className={view === "dashboard" ? "active" : ""} href="/">
-            <LayoutDashboard /><span>{t("home")}</span>
+            {view === "dashboard" ? <HouseDoorFill size={22} /> : <HouseDoor size={22} />}
+            <span>{t("navHome")}</span>
           </Link>
           <Link className={view === "customers" ? "active" : ""} href="/customers">
-            <Users /><span>{t("customers")}</span>
+            {view === "customers" ? <PeopleFill size={22} /> : <People size={22} />}
+            <span>{t("navCustomers")}</span>
           </Link>
-          <Link className={view === "settings" ? "active" : ""} href="/work-types">
-            <Settings /><span>{t("workTypes")}</span>
+          {/* Prominent Add Work Button */}
+          <button
+            type="button"
+            className="bottom-nav-action"
+            onClick={() => openNewWork()}
+            aria-label={t("addWork")}
+            title={t("addWork")}
+          >
+            <div className="action-circle">
+              <PlusLg size={24} />
+            </div>
+            <span>{t("navWork")}</span>
+          </button>
+          <Link className={view === "pending" ? "active" : ""} href="/pending">
+            <ClockHistory size={22} />
+            <span>{t("navPending")}</span>
+          </Link>
+          <Link className={view === "settings" ? "active" : ""} href="/settings">
+            {view === "settings" ? <GearFill size={22} /> : <Gear size={22} />}
+            <span>{t("navSettings")}</span>
           </Link>
         </nav>
       )}
 
+      {/* Add / Edit Work Modal */}
       {(dialog === "add-work" || (dialog === "edit-work" && dialogWork)) && (
         <WorkModal
           customers={customers}
           workTypes={workTypes}
           work={dialog === "edit-work" ? dialogWork : undefined}
+          initialCustomerId={searchParams.get("customerId") ?? undefined}
           userId={session.user.id}
           onClose={closeDialog}
           onSaved={(saved) => {
             setSavedWorkForShare(saved);
-            router.replace(dialogUrl("share-work", saved.id), { scroll: false });
+            router.replace(dialogUrl("work-saved", saved.id), { scroll: false });
             void loadData();
+          }}
+          setNotice={setNotice}
+          onCustomerCreated={(newCust) => {
+            setCustomers((prev) => [...prev, newCust]);
+          }}
+        />
+      )}
+
+      {/* Work Saved Confirmation & Share (Screen 9) */}
+      {dialog === "work-saved" && dialogWork && (
+        <WorkSavedModal
+          work={dialogWork}
+          onClose={() => {
+            closeDialog();
+            router.replace("/");
+          }}
+          onGoToCustomer={() => {
+            closeDialog();
+            if (dialogWork.customer_id) {
+              router.push(`/customers/${encodeURIComponent(dialogWork.customer_id)}`);
+            }
+          }}
+        />
+      )}
+
+      {/* Share Sheet */}
+      {dialog === "share-work" && dialogWork && (
+        <ShareSheet work={dialogWork} onClose={closeDialog} />
+      )}
+
+      {/* Single Work Payment Modal */}
+      {dialog === "add-payment" && dialogWork && (
+        <PaymentModal
+          work={dialogWork}
+          onClose={closeDialog}
+          onSaved={() => { closeDialog(); void loadData(); }}
+          setNotice={setNotice}
+        />
+      )}
+
+      {/* Customer-wide FIFO Payment Modal */}
+      {dialog === "customer-payment" && selectedCustomer && (
+        <CustomerPaymentModal
+          customer={selectedCustomer}
+          works={works.filter((work) => work.customer_id === selectedCustomer.id)}
+          onClose={closeDialog}
+          onSaved={() => { closeDialog(); void loadData(); }}
+          setNotice={setNotice}
+        />
+      )}
+
+      {/* Customer Full Statement Share */}
+      {dialog === "share-all" && selectedCustomer && (
+        <CustomerShareSheet
+          customer={selectedCustomer}
+          works={works.filter((work) => work.customer_id === selectedCustomer.id)}
+          onClose={closeDialog}
+        />
+      )}
+
+      {/* Add Customer Modal */}
+      {dialog === "add-customer" && (
+        <NewCustomerModal
+          userId={session.user.id}
+          onClose={closeDialog}
+          onSaved={(newCustomer) => {
+            setCustomers((prev) => [...prev, newCustomer]);
+            closeDialog();
+            openCustomer(newCustomer);
           }}
           setNotice={setNotice}
         />
       )}
-      {dialog === "share-work" && dialogWork && <ShareSheet work={dialogWork} onClose={closeDialog} />}
-      {dialog === "add-payment" && dialogWork && <PaymentModal work={dialogWork} onClose={closeDialog} onSaved={() => { closeDialog(); void loadData(); }} setNotice={setNotice} />}
-      {dialog === "customer-payment" && selectedCustomer && <CustomerPaymentModal customer={selectedCustomer} works={works.filter((work) => work.customer_id === selectedCustomer.id)} onClose={closeDialog} onSaved={() => { closeDialog(); void loadData(); }} setNotice={setNotice} />}
-      {dialog === "share-all" && selectedCustomer && <CustomerShareSheet customer={selectedCustomer} works={works.filter((work) => work.customer_id === selectedCustomer.id)} onClose={closeDialog} />}
+
+      {/* Work Types Modal / View */}
+      {dialog === "work-types" && (
+        <div className="modal-backdrop" role="presentation">
+          <section className="modal work-modal" role="dialog" aria-modal="true" aria-labelledby="work-types-title">
+            <div className="modal-head">
+              <div>
+                <p className="eyebrow">{t("settings")}</p>
+                <h2 id="work-types-title">{t("workTypesAndRates")}</h2>
+              </div>
+              <IconButton icon={X} label={t("close")} onClick={closeDialog} />
+            </div>
+            <WorkTypeSettings
+              workTypes={workTypes}
+              onRefresh={loadData}
+              setNotice={setNotice}
+            />
+          </section>
+        </div>
+      )}
     </div>
   );
 }
@@ -524,7 +692,7 @@ function SetupRequired() {
   return (
     <div className="setup-screen">
       <div className="setup-toolbar"><LanguageToggle /></div>
-      <div className="setup-icon"><Tractor size={38} /></div>
+      <div className="setup-icon"><TractorBrandIcon size={44} color="#15803d" /></div>
       <p className="eyebrow">{t("setupOnce")}</p>
       <h1>{t("setupTitle")}</h1>
       <p>{t("setupHelp")}</p>
@@ -534,6 +702,9 @@ function SetupRequired() {
   );
 }
 
+// -------------------------------------------------------------
+// LOGIN SCREEN (Matching Reference Screen 1)
+// -------------------------------------------------------------
 function Login() {
   const { t } = useLanguage();
   const router = useRouter();
@@ -548,48 +719,18 @@ function Login() {
     setBusy(true);
     setError("");
     const { error: authError } = await getSupabase().auth.signInWithPassword({ email, password });
-    if (authError) setError(friendlyError(authError.message, t));
-    else router.replace("/");
-    setBusy(false);
+    if (authError) {
+      setError(friendlyError(authError.message, t));
+      setBusy(false);
+    } else {
+      router.replace("/");
+    }
   };
 
   return (
     <main className="login-screen">
-      <div className="login-layout">
-        <LoginIllustration />
-        <section className="login-panel">
-          <div className="login-language"><LanguageToggle /></div>
-          <div className="login-brand">
-            <span className="brand-mark large"><Tractor size={34} /></span>
-            <div><h1>{t("loginTitle")}</h1><p>{t("appSubtitle")}</p></div>
-          </div>
-          <form onSubmit={submit}>
-            <label><FieldLabel label={t("email")} /><input type="email" required value={email} onChange={(event) => setEmail(event.target.value)} autoComplete="email" /></label>
-            <label>
-              <FieldLabel label={t("password")} />
-              <div className="password-input">
-                <input type={passwordVisible ? "text" : "password"} required value={password} onChange={(event) => setPassword(event.target.value)} autoComplete="current-password" />
-                <button type="button" onClick={() => setPasswordVisible((visible) => !visible)} aria-label={passwordVisible ? t("hidePassword") : t("showPassword")} title={passwordVisible ? t("hidePassword") : t("showPassword")}>
-                  {passwordVisible ? <EyeOff size={21} /> : <Eye size={21} />}
-                </button>
-              </div>
-            </label>
-            {error && <p className="form-error">{error}</p>}
-            <button className="primary-button" disabled={busy}>{busy ? t("signingIn") : t("signIn")}</button>
-            <Link className="auth-text-link" href="/forgot-password">{t("forgotPassword")}</Link>
-          </form>
-          <p className="login-help">{t("privateRecords")}</p>
-        </section>
-      </div>
-    </main>
-  );
-}
-
-function LoginIllustration() {
-  const { t } = useLanguage();
-  return (
-    <>
-      <div className="login-bg-overlay desktop-only-bg">
+      {/* Background illustration: panoramic tractor field sunset */}
+      <div className="login-bg-overlay">
         <Image
           className="login-bg-image"
           src="/images/dashboard-banner.png"
@@ -597,92 +738,77 @@ function LoginIllustration() {
           fill
           priority
           sizes="100vw"
-          style={{ objectFit: "cover", objectPosition: "center center" }}
+          style={{ objectFit: "cover", objectPosition: "center 30%" }}
         />
         <div className="login-bg-dim" />
       </div>
-      <div className="login-mobile-banner mobile-only-banner">
-        <Image
-          className="login-mobile-banner-image"
-          src="/images/dashboard-banner.png"
-          alt={t("loginIllustrationAlt")}
-          fill
-          priority
-          sizes="100vw"
-        />
-        <div className="login-mobile-banner-overlay" />
-        <div className="login-mobile-banner-text">
-          <strong>{t("appName")}</strong>
-          <span>{t("appSubtitle")}</span>
-        </div>
-      </div>
-    </>
-  );
-}
 
-type PasswordAuthProblem = {
-  code?: string;
-  message: string;
-  reasons?: string[];
-};
-
-function passwordErrorText(error: PasswordAuthProblem, t: (key: MessageKey, values?: Record<string, string | number>) => string) {
-  if (error.code === "same_password") return t("passwordSame");
-  if (error.code === "reauthentication_not_valid" || error.code === "otp_expired") return t("reauthCodeInvalid");
-  if (error.code === "session_expired" || error.code === "session_not_found" || error.code === "refresh_token_not_found") return t("sessionExpired");
-  if (error.code === "weak_password") {
-    const messages: string[] = [];
-    const minimum = error.message.match(/\d+/)?.[0];
-    for (const reason of error.reasons ?? []) {
-      if (reason === "length") messages.push(minimum ? t("passwordTooShort", { count: minimum }) : t("passwordLengthRule"));
-      if (reason === "characters") messages.push(t("passwordCharacterRule"));
-      if (reason === "pwned") messages.push(t("passwordLeakedRule"));
-    }
-    return messages.length ? messages.join(" ") : t("passwordWeak");
-  }
-  return t("passwordUpdateFailed");
-}
-
-function PasswordField({ label, value, onChange, autoComplete }: {
-  label: string;
-  value: string;
-  onChange: (value: string) => void;
-  autoComplete: "current-password" | "new-password" | "one-time-code";
-}) {
-  const { t } = useLanguage();
-  const [visible, setVisible] = useState(false);
-  return (
-    <label>
-      <FieldLabel label={label} />
-      <div className="password-input">
-        <input
-          type={visible ? "text" : "password"}
-          required
-          value={value}
-          onChange={(event) => onChange(event.target.value)}
-          autoComplete={autoComplete}
-        />
-        <button type="button" onClick={() => setVisible((shown) => !shown)} aria-label={visible ? t("hidePassword") : t("showPassword")} title={visible ? t("hidePassword") : t("showPassword")}>
-          {visible ? <EyeOff size={21} /> : <Eye size={21} />}
-        </button>
-      </div>
-    </label>
-  );
-}
-
-function AuthPageFrame({ children }: { children: React.ReactNode }) {
-  const { t } = useLanguage();
-  return (
-    <main className="login-screen">
-      <div className="login-layout">
-        <LoginIllustration />
-        <section className="login-panel auth-flow-panel">
-          <div className="login-language"><LanguageToggle /></div>
-          <div className="login-brand">
-            <span className="brand-mark large"><Tractor size={34} /></span>
-            <div><h1>{t("loginTitle")}</h1><p>{t("appSubtitle")}</p></div>
+      <div className="login-container">
+        {/* Top Branding matching reference Screen 1 */}
+        <div className="login-brand-header">
+          <div className="login-tractor-logo">
+            <TractorBrandIcon size={56} color="#15803d" />
           </div>
-          {children}
+          <h1 className="login-app-title">{t("appName")}</h1>
+          <p className="login-app-tagline">{t("appTagline")}</p>
+        </div>
+
+        {/* Floating White Card */}
+        <section className="login-card">
+          <div className="login-card-top">
+            <LanguageToggle compact />
+          </div>
+          <form onSubmit={submit} className="login-form">
+            <label className="input-group">
+              <FieldLabel label={t("email")} />
+              <div className="icon-input-wrap">
+                <EnvelopeFill size={18} className="field-icon" />
+                <input
+                  type="email"
+                  required
+                  value={email}
+                  onChange={(event) => setEmail(event.target.value)}
+                  autoComplete="email"
+                  placeholder="name@example.com"
+                />
+              </div>
+            </label>
+
+            <label className="input-group">
+              <FieldLabel label={t("password")} />
+              <div className="icon-input-wrap">
+                <LockFill size={18} className="field-icon" />
+                <input
+                  type={passwordVisible ? "text" : "password"}
+                  required
+                  value={password}
+                  onChange={(event) => setPassword(event.target.value)}
+                  autoComplete="current-password"
+                  placeholder="••••••••"
+                />
+                <button
+                  type="button"
+                  className="password-toggle-btn"
+                  onClick={() => setPasswordVisible((visible) => !visible)}
+                  aria-label={passwordVisible ? t("hidePassword") : t("showPassword")}
+                >
+                  {passwordVisible ? <EyeSlashFill size={19} /> : <EyeFill size={19} />}
+                </button>
+              </div>
+            </label>
+
+            {error && <p className="form-error" role="alert">{error}</p>}
+
+            <button type="submit" className="login-submit-button" disabled={busy}>
+              {busy ? t("signingIn") : t("loginBtn")}
+            </button>
+
+            <div className="login-links">
+              <Link className="auth-text-link" href="/forgot-password">
+                {t("forgotPassword")}
+              </Link>
+            </div>
+          </form>
         </section>
       </div>
     </main>
@@ -704,7 +830,7 @@ function ForgotPassword() {
         redirectTo: getPasswordRecoveryRedirectUrl(),
       });
     } catch {
-      // Keep the response generic so this screen never reveals account existence.
+      // Keep response generic
     } finally {
       setBusy(false);
       setSent(true);
@@ -712,18 +838,64 @@ function ForgotPassword() {
   };
 
   return (
-    <AuthPageFrame>
-      <div className="auth-flow-heading"><h2>{t("forgotPasswordTitle")}</h2><p>{t("forgotPasswordHelp")}</p></div>
-      {sent ? (
-        <div className="auth-confirmation" role="status"><p>{t("resetEmailConfirmation")}</p><Link className="primary-button" href="/">{t("backToLogin")}</Link></div>
-      ) : (
-        <form onSubmit={submit}>
-          <label><FieldLabel label={t("email")} /><input type="email" required value={email} onChange={(event) => setEmail(event.target.value)} autoComplete="email" /></label>
-          <button className="primary-button" disabled={busy}>{busy ? t("sendingResetLink") : t("sendResetLink")}</button>
-          <Link className="auth-text-link" href="/">{t("backToLogin")}</Link>
-        </form>
-      )}
-    </AuthPageFrame>
+    <main className="login-screen">
+      <div className="login-bg-overlay">
+        <Image
+          className="login-bg-image"
+          src="/images/dashboard-banner.png"
+          alt={t("loginIllustrationAlt")}
+          fill
+          priority
+          sizes="100vw"
+          style={{ objectFit: "cover", objectPosition: "center 30%" }}
+        />
+        <div className="login-bg-dim" />
+      </div>
+      <div className="login-container">
+        <div className="login-brand-header">
+          <div className="login-tractor-logo">
+            <TractorBrandIcon size={48} color="#15803d" />
+          </div>
+          <h1 className="login-app-title">{t("appName")}</h1>
+        </div>
+        <section className="login-card">
+          <div className="auth-flow-heading">
+            <h2>{t("forgotPasswordTitle")}</h2>
+            <p>{t("forgotPasswordHelp")}</p>
+          </div>
+          {sent ? (
+            <div className="auth-confirmation" role="status">
+              <p>{t("resetEmailConfirmation")}</p>
+              <Link className="login-submit-button text-center block mt-4" href="/">
+                {t("backToLogin")}
+              </Link>
+            </div>
+          ) : (
+            <form onSubmit={submit} className="login-form">
+              <label className="input-group">
+                <FieldLabel label={t("email")} />
+                <div className="icon-input-wrap">
+                  <EnvelopeFill size={18} className="field-icon" />
+                  <input
+                    type="email"
+                    required
+                    value={email}
+                    onChange={(event) => setEmail(event.target.value)}
+                    autoComplete="email"
+                  />
+                </div>
+              </label>
+              <button className="login-submit-button" disabled={busy}>
+                {busy ? t("sendingResetLink") : t("sendResetLink")}
+              </button>
+              <Link className="auth-text-link text-center" href="/">
+                {t("backToLogin")}
+              </Link>
+            </form>
+          )}
+        </section>
+      </div>
+    </main>
   );
 }
 
@@ -751,17 +923,7 @@ function ResetPassword({ hasRecoverySession }: { hasRecoverySession: boolean }) 
     const { error: updateError } = await getSupabase().auth.updateUser({ password: newPassword });
     setBusy(false);
     if (updateError) {
-      const authProblem = updateError as PasswordAuthProblem;
-      if (
-        authProblem.code === "otp_expired" ||
-        authProblem.code === "session_expired" ||
-        authProblem.code === "session_not_found" ||
-        authProblem.code === "refresh_token_not_found"
-      ) {
-        setLinkFailure(authProblem.code === "session_not_found" ? "invalid" : "expired-or-used");
-        return;
-      }
-      return setError(passwordErrorText(authProblem, t));
+      return setError(friendlyError(updateError.message, t));
     }
     setNewPassword("");
     setConfirmation("");
@@ -770,29 +932,102 @@ function ResetPassword({ hasRecoverySession }: { hasRecoverySession: boolean }) 
   };
 
   return (
-    <AuthPageFrame>
-      {invalidLink && !success ? (
-        <div className="auth-confirmation error-state" role="alert"><p>{t(linkFailure === "expired-or-used" ? "recoveryLinkExpiredOrUsed" : "recoveryLinkInvalid")}</p><Link className="primary-button" href="/forgot-password">{t("requestAnotherLink")}</Link><Link className="auth-text-link" href="/">{t("backToLogin")}</Link></div>
-      ) : success ? (
-        <div className="auth-confirmation success-state" role="status"><p>{t("passwordChanged")}</p><button className="primary-button" onClick={() => router.replace("/")}>{t("continueToApp")}</button></div>
-      ) : (
-        <>
-          <div className="auth-flow-heading"><h2>{t("resetPasswordTitle")}</h2><p>{t("resetPasswordHelp")}</p></div>
-          <form onSubmit={submit}>
-            <PasswordField label={t("newPassword")} value={newPassword} onChange={setNewPassword} autoComplete="new-password" />
-            <PasswordField label={t("confirmPassword")} value={confirmation} onChange={setConfirmation} autoComplete="new-password" />
-            <p className="field-help">{t("passwordRequirements")}</p>
-            {error && <p className="form-error" role="alert">{error}</p>}
-            <button className="primary-button" disabled={busy}>{busy ? t("updatingPassword") : t("updatePassword")}</button>
-            <button type="button" className="auth-text-link button-link" onClick={() => requestClose(() => router.replace("/"))}>{t("backToLogin")}</button>
-          </form>
-        </>
-      )}
-    </AuthPageFrame>
+    <main className="login-screen">
+      <div className="login-bg-overlay">
+        <Image
+          className="login-bg-image"
+          src="/images/dashboard-banner.png"
+          alt={t("loginIllustrationAlt")}
+          fill
+          priority
+          sizes="100vw"
+          style={{ objectFit: "cover", objectPosition: "center 30%" }}
+        />
+        <div className="login-bg-dim" />
+      </div>
+      <div className="login-container">
+        <section className="login-card">
+          {invalidLink && !success ? (
+            <div className="auth-confirmation error-state" role="alert">
+              <p>{t(linkFailure === "expired-or-used" ? "recoveryLinkExpiredOrUsed" : "recoveryLinkInvalid")}</p>
+              <Link className="login-submit-button text-center block mt-4" href="/forgot-password">
+                {t("requestAnotherLink")}
+              </Link>
+              <Link className="auth-text-link text-center block mt-2" href="/">
+                {t("backToLogin")}
+              </Link>
+            </div>
+          ) : success ? (
+            <div className="auth-confirmation success-state" role="status">
+              <p>{t("passwordChanged")}</p>
+              <button className="login-submit-button mt-4" onClick={() => router.replace("/")}>
+                {t("continueToApp")}
+              </button>
+            </div>
+          ) : (
+            <>
+              <div className="auth-flow-heading">
+                <h2>{t("resetPasswordTitle")}</h2>
+                <p>{t("resetPasswordHelp")}</p>
+              </div>
+              <form onSubmit={submit} className="login-form">
+                <label className="input-group">
+                  <FieldLabel label={t("newPassword")} />
+                  <input
+                    type="password"
+                    required
+                    value={newPassword}
+                    onChange={(event) => setNewPassword(event.target.value)}
+                    autoComplete="new-password"
+                  />
+                </label>
+                <label className="input-group">
+                  <FieldLabel label={t("confirmPassword")} />
+                  <input
+                    type="password"
+                    required
+                    value={confirmation}
+                    onChange={(event) => setConfirmation(event.target.value)}
+                    autoComplete="new-password"
+                  />
+                </label>
+                {error && <p className="form-error" role="alert">{error}</p>}
+                <button className="login-submit-button" disabled={busy}>
+                  {busy ? t("updatingPassword") : t("updatePassword")}
+                </button>
+                <button
+                  type="button"
+                  className="auth-text-link button-link text-center"
+                  onClick={() => requestClose(() => router.replace("/"))}
+                >
+                  {t("backToLogin")}
+                </button>
+              </form>
+            </>
+          )}
+        </section>
+      </div>
+    </main>
   );
 }
 
-function Dashboard({ works, total, received, loading, onAdd, onEdit, onShare, onAddPayment, onOpenCustomer }: {
+// -------------------------------------------------------------
+// HOME / DASHBOARD (Matching Reference Screen 4)
+// -------------------------------------------------------------
+function Dashboard({
+  customers,
+  works,
+  total,
+  received,
+  loading,
+  onAdd,
+  onEdit,
+  onShare,
+  onAddPayment,
+  onOpenCustomer,
+  onViewAllDues,
+}: {
+  customers: Customer[];
   works: WorkRecord[];
   total: number;
   received: number;
@@ -802,107 +1037,212 @@ function Dashboard({ works, total, received, loading, onAdd, onEdit, onShare, on
   onShare: (work: WorkRecord) => void;
   onAddPayment: (work: WorkRecord) => void;
   onOpenCustomer: (customer: Customer) => void;
+  onViewAllDues: () => void;
 }) {
   const { t } = useLanguage();
-  const recent = works.slice(0, 6);
+  const pendingTotal = Math.max(0, total - received);
+
+  // Group pending dues by customer
+  const customerDues = useMemo(() => {
+    return customers
+      .map((customer) => {
+        const customerWorks = works.filter((w) => w.customer_id === customer.id);
+        const due = customerWorks.reduce((sum, w) => sum + balanceFor(w), 0);
+        return { customer, due, workCount: customerWorks.length };
+      })
+      .filter((item) => item.due > 0)
+      .sort((a, b) => b.due - a.due);
+  }, [customers, works]);
+
   return (
-    <>
-      <section className="page-heading">
-        <div><h1>{t("todayRecords")}</h1><p>{t("overviewHelp")}</p></div>
-        <button className="desktop-add primary-button" onClick={onAdd}><Plus size={21} /> {t("addWork")}</button>
+    <div className="dashboard-content">
+      {/* 1. Large "రావాల్సిన బాకీ" Card (Pale Red with Dark Red Amount) */}
+      <section className="stat-card-hero">
+        <div className="stat-hero-badge">
+          <CashCoin size={28} />
+        </div>
+        <div className="stat-hero-info">
+          <span className="stat-hero-label">{t("pending")}</span>
+          <strong className="stat-hero-amount">{money(pendingTotal)}</strong>
+        </div>
       </section>
-      <section className="stats-grid">
-        <article className="stat pending"><span><ClipboardList /></span><p>{t("pending")}</p><strong>{money(Math.max(0, total - received))}</strong></article>
-        <article className="stat received"><span><WalletCards /></span><p>{t("received")}</p><strong>{money(received)}</strong></article>
-        <article className="stat total"><span><IndianRupee /></span><p>{t("totalWork")}</p><strong>{money(total)}</strong></article>
+
+      {/* 2. Two Smaller Cards: "మొత్తం పని" & "వచ్చిన డబ్బు" */}
+      <section className="stats-row-two">
+        <article className="stat-card-total">
+          <div className="stat-icon-wrapper blue">
+            <Truck size={20} />
+          </div>
+          <div className="stat-small-text">
+            <span>{t("totalWork")}</span>
+            <strong>{money(total)}</strong>
+          </div>
+        </article>
+
+        <article className="stat-card-received">
+          <div className="stat-icon-wrapper green">
+            <Wallet2 size={20} />
+          </div>
+          <div className="stat-small-text">
+            <span>{t("received")}</span>
+            <strong>{money(received)}</strong>
+          </div>
+        </article>
       </section>
+
+      {/* 3. Prominent "+ కొత్త పని నమోదు చేయండి" Button */}
+      <button className="primary-action-card-btn" onClick={onAdd}>
+        <PlusLg size={22} />
+        <span>{t("addNewWorkHome")}</span>
+      </button>
+
+      {/* 4. "బాకీ ఉన్నవారు" (Pending Balances List) Section */}
       <section className="section-block">
-        <div className="section-title"><h2>{t("recentWork")}</h2><span>{t("recordCount", { count: works.length })}</span></div>
-        {loading ? <div className="loading-line">{t("loading")}</div> : recent.length ? (
-          <div className="record-list">{recent.map((work) => (
-            <WorkRow
-              key={work.id}
-              work={work}
-              hasPreviousWork={works.some((candidate) => candidate.customer_id === work.customer_id && candidate.id !== work.id)}
-              onEdit={() => onEdit(work)}
-              onShare={() => onShare(work)}
-              onAddPayment={() => onAddPayment(work)}
-              onOpenCustomer={() => work.customer && onOpenCustomer(work.customer)}
-            />
-          ))}</div>
-        ) : <EmptyState icon={ClipboardList} title={t("noWork")} text={t("noWorkHelp")} />}
+        <div className="section-header-flex">
+          <h2>{t("pendingDuesSection")}</h2>
+          <button type="button" className="view-all-link" onClick={onViewAllDues}>
+            {t("viewAll")} <ChevronRight size={14} />
+          </button>
+        </div>
+
+        {loading ? (
+          <div className="loading-line">{t("loading")}</div>
+        ) : customerDues.length ? (
+          <div className="pending-farmers-list">
+            {customerDues.slice(0, 5).map(({ customer, due, workCount }) => (
+              <button
+                key={customer.id}
+                type="button"
+                className="farmer-due-row"
+                onClick={() => onOpenCustomer(customer)}
+              >
+                <div className="avatar-circle">
+                  {customer.name.slice(0, 1).toUpperCase()}
+                </div>
+                <div className="farmer-due-info">
+                  <strong>{customer.name}</strong>
+                  <small>{t("recordCount", { count: workCount })}</small>
+                </div>
+                <div className="farmer-due-amount">
+                  <span>{money(due)}</span>
+                  <ChevronRight size={18} />
+                </div>
+              </button>
+            ))}
+          </div>
+        ) : (
+          <div className="no-pending-card">
+            <CheckCircleFill size={24} color="#15803d" />
+            <p>{t("noPendingDues")}</p>
+          </div>
+        )}
       </section>
-    </>
+    </div>
   );
 }
 
-function WorkRow({ work, hasPreviousWork, onEdit, onShare, onAddPayment, onOpenCustomer }: {
-  work: WorkRecord;
-  hasPreviousWork: boolean;
-  onEdit: () => void;
-  onShare: () => void;
-  onAddPayment: () => void;
-  onOpenCustomer: () => void;
-}) {
-  const { language, t } = useLanguage();
-  const balance = balanceFor(work);
-  const workDate = new Date(`${work.work_date}T00:00:00`);
-  const unit = work.charge_basis === "hour" ? t("hoursWorked") : t("acres");
-  const fullDate = workDate.toLocaleDateString(language === "te" ? "te-IN-u-nu-latn" : "en-IN", { day: "numeric", month: "short", year: "numeric" });
-  return (
-    <article className="work-row">
-      <div className="work-main">
-        {work.customer ? <button type="button" className="work-customer-link" onClick={onOpenCustomer}>{work.customer.name}</button> : <h3>{t("farmer")}</h3>}
-        <span className="work-customer-phone">{work.customer?.phone || t("noPhone")}</span>
-        <p className="work-type-name">{displayWorkType(work.work_type_name, language)}</p>
-        <p className="work-summary">{fullDate} · {work.quantity} {unit} · {money(work.rate)}</p>
-      </div>
-      <div className={`work-money${balance > 0 ? " due" : " paid"}`}>
-        <strong>{money(balance)}</strong>
-        <span>{balance > 0 ? t("balanceDue") : t("paid")}</span>
-      </div>
-      <div className="work-card-actions"><button className="row-action-button" onClick={onEdit}><Pencil size={17} /> {t("editWork")}</button><button className="row-action-button" onClick={onShare}><MessageCircle size={17} /> {t("shareReceipt")}</button>{balance > 0 && <button className="small-action payment-action" onClick={onAddPayment}><CirclePlus size={18} /> {t("addPayment")}</button>}</div>
-      {work.customer && (hasPreviousWork ? <button type="button" className="history-link" onClick={onOpenCustomer}>{t("viewOldWorkHistory")} <ChevronRight size={18} /></button> : <p className="no-history-note">{t("noOldWorkHistory")}</p>)}
-    </article>
-  );
-}
-
-function Customers({ customers, works, query, onQueryChange, onSelect }: {
+// -------------------------------------------------------------
+// CUSTOMERS LIST (Matching Reference Screen 5)
+// -------------------------------------------------------------
+function Customers({
+  customers,
+  works,
+  query,
+  onQueryChange,
+  onSelect,
+  onAddNewCustomer,
+}: {
   customers: Customer[];
   works: WorkRecord[];
   query: string;
   onQueryChange: (query: string) => void;
   onSelect: (customer: Customer) => void;
+  onAddNewCustomer: () => void;
 }) {
   const { t } = useLanguage();
-  const filtered = customers.filter((customer) => `${customer.name} ${customer.phone ?? ""}`.toLowerCase().includes(query.toLowerCase()));
+  const filtered = customers.filter((customer) =>
+    `${customer.name} ${customer.phone ?? ""}`.toLowerCase().includes(query.toLowerCase())
+  );
+
   return (
-    <>
-      <section className="page-heading"><div><h1>{t("customerList")}</h1><p>{t("customerHelp")}</p></div></section>
-      <label className="search-box"><Search size={21} /><span className="sr-only">{t("search")}</span><input placeholder={t("searchPlaceholder")} value={query} onChange={(event) => onQueryChange(event.target.value)} /></label>
-      <section className="customer-list">
+    <div className="customers-view-content">
+      {/* Search Input */}
+      <div className="search-box">
+        <Search size={18} />
+        <input
+          placeholder={t("searchPlaceholder")}
+          value={query}
+          onChange={(event) => onQueryChange(event.target.value)}
+        />
+      </div>
+
+      {/* "+ కొత్త కస్టమర్" Button */}
+      <button className="add-farmer-top-btn" onClick={onAddNewCustomer}>
+        <PlusLg size={20} />
+        <span>{t("addNewCustomer")}</span>
+      </button>
+
+      {/* Customer List */}
+      <section className="customer-list-card">
         {filtered.map((customer) => {
           const customerWorks = works.filter((work) => work.customer_id === customer.id);
           const due = customerWorks.reduce((sum, work) => sum + balanceFor(work), 0);
           return (
-            <button key={customer.id} className="customer-row" onClick={() => onSelect(customer)}>
-              <span className="avatar">{customer.name.slice(0, 1).toUpperCase()}</span>
-              <span className="customer-name"><strong>{customer.name}</strong><small>{customer.phone || t("noPhone")}</small></span>
-              <span className="customer-due"><small>{t("customerBalance")}</small>{due > 0 ? <strong className="due-text">{money(due)}</strong> : <strong className="no-balance-badge">{t("noBalance")}</strong>}</span>
-              <ChevronRight size={21} />
+            <button
+              key={customer.id}
+              type="button"
+              className="customer-item-row"
+              onClick={() => onSelect(customer)}
+            >
+              <div className="avatar-circle">
+                {customer.name.slice(0, 1).toUpperCase()}
+              </div>
+              <div className="customer-row-details">
+                <strong>{customer.name}</strong>
+                <span className="customer-phone-line">
+                  <Phone size={13} /> {customer.phone || t("noPhone")}
+                </span>
+              </div>
+              <div className="customer-row-balance">
+                {due > 0 ? (
+                  <span className="due-amount-red">
+                    {t("pendingDueBadge")} {money(due)} <ChevronRight size={14} />
+                  </span>
+                ) : (
+                  <span className="paid-amount-green">
+                    {t("pendingDueBadge")} ₹0
+                  </span>
+                )}
+              </div>
             </button>
           );
         })}
-        {!filtered.length && <EmptyState icon={Users} title={t("noFarmers")} text={t("noFarmersHelp")} />}
+        {!filtered.length && (
+          <EmptyState title={t("noFarmers")} text={t("noFarmersHelp")} />
+        )}
       </section>
-    </>
+    </div>
   );
 }
 
-function CustomerDetail({ customer, works, onBack, onEdit, onShare, onAddPayment, onAddCustomerPayment, onShareAll }: {
+// -------------------------------------------------------------
+// CUSTOMER DETAILS (Matching Reference Screen 6)
+// -------------------------------------------------------------
+function CustomerDetail({
+  customer,
+  works,
+  onBack,
+  onAddWork,
+  onEdit,
+  onShare,
+  onAddPayment,
+  onAddCustomerPayment,
+  onShareAll,
+}: {
   customer: Customer;
   works: WorkRecord[];
   onBack: () => void;
+  onAddWork: () => void;
   onEdit: (work: WorkRecord) => void;
   onShare: (work: WorkRecord) => void;
   onAddPayment: (work: WorkRecord) => void;
@@ -910,276 +1250,413 @@ function CustomerDetail({ customer, works, onBack, onEdit, onShare, onAddPayment
   onShareAll: () => void;
 }) {
   const { language, t } = useLanguage();
+  const [filter, setFilter] = useState<"all" | "pending" | "paid">("all");
+
   const total = works.reduce((sum, work) => sum + Number(work.total), 0);
   const received = works.reduce((sum, work) => sum + paidFor(work), 0);
   const balance = works.reduce((sum, work) => sum + balanceFor(work), 0);
-  const dateLabel = (value: string) => new Date(`${value}T00:00:00`).toLocaleDateString(language === "te" ? "te-IN-u-nu-latn" : "en-IN", { day: "numeric", month: "short", year: "numeric" });
-  const methodLabel = (method: string) => t(({ Cash: "cash", UPI: "upi", "Bank transfer": "bankTransfer", Other: "other" }[method] ?? "other") as MessageKey);
+
+  const dateLabel = (value: string) =>
+    new Date(`${value}T00:00:00`).toLocaleDateString(
+      language === "te" ? "te-IN-u-nu-latn" : "en-IN",
+      { day: "numeric", month: "short", year: "numeric" }
+    );
+
+  const cleanPhone = customer.phone?.replace(/[^\d+]/g, "") ?? "";
+  const hasPhone = cleanPhone.length > 5;
+
+  const filteredWorks = works.filter((w) => {
+    const bal = balanceFor(w);
+    if (filter === "pending") return bal > 0;
+    if (filter === "paid") return bal <= 0;
+    return true;
+  });
 
   return (
-    <>
-      <button className="back-button" onClick={onBack}><ArrowLeft size={21} /> {t("back")}</button>
-      <section className="customer-hero"><div className="avatar large-avatar">{customer.name.slice(0, 1).toUpperCase()}</div><div className="customer-identity"><h1>{customer.name}</h1><p>{customer.phone || t("noPhone")}</p></div><div className="customer-primary-actions"><button className="customer-share-action" onClick={onShareAll}><span className="customer-action-content"><MessageCircle size={20} aria-hidden="true" /><span className="customer-action-label">{t("shareDetails")}</span></span></button>{balance > 0 && <button className="customer-payment-action" onClick={onAddCustomerPayment}><span className="customer-action-content"><CirclePlus size={20} aria-hidden="true" /><span className="customer-action-label">{t("addPayment")}</span></span></button>}</div></section>
-      <section className="mini-stats">
-        <div><span>{t("totalAmount")}</span><strong>{money(total)}</strong></div>
-        <div><span>{t("received")}</span><strong>{money(received)}</strong></div>
-        <div><span>{t("balanceDue")}</span><strong className="due-text">{money(balance)}</strong></div>
+    <div className="customer-detail-content">
+      {/* Back button */}
+      <button className="back-nav-bar" onClick={onBack}>
+        <ArrowLeft size={20} />
+        <span>{t("customerDetails")}</span>
+      </button>
+
+      {/* Customer Header Card with Call & WhatsApp icons on right */}
+      <section className="customer-hero-card">
+        <div className="avatar-circle large">
+          {customer.name.slice(0, 1).toUpperCase()}
+        </div>
+        <div className="customer-hero-text">
+          <h1>{customer.name}</h1>
+          <p>{customer.phone || t("noPhone")}</p>
+        </div>
+        {hasPhone && (
+          <div className="customer-quick-call-actions">
+            <a
+              href={`tel:${cleanPhone}`}
+              className="quick-icon-btn call-btn"
+              title={t("call")}
+              aria-label={t("call")}
+            >
+              <TelephoneFill size={18} />
+            </a>
+            <a
+              href={`https://wa.me/${cleanPhone}`}
+              target="_blank"
+              rel="noreferrer"
+              className="quick-icon-btn whatsapp-btn"
+              title="WhatsApp"
+              aria-label="WhatsApp"
+            >
+              <Whatsapp size={20} />
+            </a>
+          </div>
+        )}
       </section>
-      <section className="section-block history-section">
-        <div className="section-title"><h2>{t("workPaymentHistory")}</h2>{works.length > 0 && <span>{t("recordCount", { count: works.length })}</span>}</div>
-        {works.length ? (
-          <div className="history-list">{works.map((work) => {
-            const balance = balanceFor(work);
-            const paid = paidFor(work);
-            const statusClass = balance <= 0 ? "paid" : paid > 0 ? "partial" : "due";
-            const statusLabel = balance <= 0 ? t("paid") : paid > 0 ? t("partiallyPaid") : t("paymentDue");
-            return (
-            <article className="history-item" key={work.id}>
-              <div className="history-head">
-                <strong>{displayWorkType(work.work_type_name, language)}</strong>
-                <span className={`payment-status ${statusClass}`}>{statusLabel}</span>
-              </div>
-              <div className="history-details">
-                <p><span>{t("workDate")}</span><strong>{dateLabel(work.work_date)}</strong></p>
-                <p><span>{t("sharedQuantity")}</span><strong>{work.quantity} {work.charge_basis === "hour" ? t("hoursWorked") : t("acres")}</strong></p>
-                <p><span>{t("receiptRate")}</span><strong>{money(work.rate)}</strong></p>
-                <p><span>{t("remainingBalance")}</span><strong className={balance > 0 ? "due-text" : "paid-text"}>{money(balance)}</strong></p>
-              </div>
-              {(work.payments ?? []).length > 0 && <h4 className="payment-title">{t("payments")}</h4>}
-              <div className="payment-lines">{(work.payments ?? []).map((payment) => <div key={payment.id}><span>{dateLabel(payment.payment_date)} · {methodLabel(payment.method)}</span><strong>+{money(payment.amount)}</strong></div>)}</div>
-              <div className="history-footer">
-                <div className="work-card-actions"><button className="row-action-button" onClick={() => onEdit(work)}><Pencil size={17} /> {t("editWork")}</button><button className="row-action-button" onClick={() => onShare(work)}><MessageCircle size={17} /> {t("shareReceipt")}</button>{balance > 0 && <button className="small-action payment-action" onClick={() => onAddPayment(work)}><CirclePlus size={18} /> {t("addPayment")}</button>}</div>
-              </div>
-            </article>
-          );})}</div>
-        ) : <EmptyState icon={ClipboardList} title={t("noOldWorkHistory")} text={t("noFarmerWorkHelp")} />}
+
+      {/* Big "రావాల్సిన బాకీ" Card */}
+      <section className="stat-card-hero">
+        <div className="stat-hero-badge">
+          <CashCoin size={28} />
+        </div>
+        <div className="stat-hero-info">
+          <span className="stat-hero-label">{t("pending")}</span>
+          <strong className="stat-hero-amount">{money(balance)}</strong>
+        </div>
       </section>
-    </>
-  );
-}
 
-function WorkTypeSettings({ workTypes, onRefresh, setNotice }: { workTypes: WorkType[]; onRefresh: () => Promise<void>; setNotice: (notice: Notice) => void }) {
-  const { language, t } = useLanguage();
-  const [name, setName] = useState("");
-  const add = async (event: FormEvent) => {
-    event.preventDefault();
-    const value = name.trim();
-    if (!value) return;
-    const { data: userData } = await getSupabase().auth.getUser();
-    const { error } = await getSupabase().from("work_types").insert({ name: value, user_id: userData.user?.id });
-    if (error) setNotice({ tone: "error", text: friendlyError(error.message, t) });
-    else {
-      setName("");
-      setNotice({ tone: "success", text: t("workTypeAdded") });
-      await onRefresh();
-    }
-  };
-  const toggle = async (workType: WorkType) => {
-    const { error } = await getSupabase().from("work_types").update({ active: !workType.active }).eq("id", workType.id);
-    if (error) setNotice({ tone: "error", text: friendlyError(error.message, t) });
-    else await onRefresh();
-  };
-  return (
-    <>
-      <section className="page-heading"><div><h1>{t("workTypes")}</h1><p>{t("workTypesHelp")}</p></div></section>
-      <section className="settings-panel">
-        <form className="inline-form" onSubmit={add}><label><FieldLabel label={t("newWorkType")} /><input value={name} onChange={(event) => setName(event.target.value)} placeholder={t("workTypeExample")} /></label><button className="primary-button"><Plus size={20} /> {t("add")}</button></form>
-        <div className="type-list">{workTypes.map((type) => <WorkTypeRateEditor key={type.id} workType={type} language={language} onToggle={() => void toggle(type)} onRefresh={onRefresh} setNotice={setNotice} />)}</div>
+      {/* Two Smaller Cards: "మొత్తం పని" & "వచ్చిన డబ్బు" */}
+      <section className="stats-row-two">
+        <article className="stat-card-total">
+          <div className="stat-icon-wrapper blue">
+            <Truck size={18} />
+          </div>
+          <div className="stat-small-text">
+            <span>{t("totalWork")}</span>
+            <strong>{money(total)}</strong>
+          </div>
+        </article>
+
+        <article className="stat-card-received">
+          <div className="stat-icon-wrapper green">
+            <Wallet2 size={18} />
+          </div>
+          <div className="stat-small-text">
+            <span>{t("received")}</span>
+            <strong>{money(received)}</strong>
+          </div>
+        </article>
       </section>
-      <ChangePasswordPanel />
-    </>
-  );
-}
 
-function ChangePasswordPanel() {
-  const { t } = useLanguage();
-  const [newPassword, setNewPassword] = useState("");
-  const [confirmation, setConfirmation] = useState("");
-  const [currentPassword, setCurrentPassword] = useState("");
-  const [nonce, setNonce] = useState("");
-  const [needsCurrentPassword, setNeedsCurrentPassword] = useState(false);
-  const [needsNonce, setNeedsNonce] = useState(false);
-  const [error, setError] = useState("");
-  const [status, setStatus] = useState("");
-  const [busy, setBusy] = useState(false);
-  useUnsavedChangesGuard((newPassword !== "" || confirmation !== "" || currentPassword !== "" || nonce !== "") && !busy);
+      {/* Three Stacked Primary Actions (Compact Heights) */}
+      <div className="customer-stacked-actions">
+        <button className="stacked-btn blue" onClick={onAddWork}>
+          <PlusLg size={18} />
+          <span>{t("addWork")}</span>
+        </button>
 
-  const submit = async (event: FormEvent) => {
-    event.preventDefault();
-    setError("");
-    setStatus("");
-    if (!newPassword) return setError(t("passwordRequired"));
-    if (newPassword !== confirmation) return setError(t("passwordsDoNotMatch"));
-    if (needsCurrentPassword && !currentPassword) return setError(t("currentPasswordRequired"));
-    if (needsNonce && !nonce.trim()) return setError(t("reauthCodeHelp"));
+        {balance > 0 && (
+          <button className="stacked-btn green" onClick={onAddCustomerPayment}>
+            <CashCoin size={18} />
+            <span>{t("addPayment")}</span>
+          </button>
+        )}
 
-    setBusy(true);
-    const attributes: { password: string; nonce?: string; current_password?: string } = { password: newPassword };
-    if (needsNonce) attributes.nonce = nonce.trim();
-    if (needsCurrentPassword) attributes.current_password = currentPassword;
-    const { error: updateError } = await getSupabase().auth.updateUser(attributes);
+        <button className="stacked-btn whatsapp" onClick={onShareAll}>
+          <Whatsapp size={19} />
+          <span>{t("shareOnWhatsApp")}</span>
+        </button>
+      </div>
 
-    if (updateError) {
-      const lowerMessage = updateError.message.toLowerCase();
-      if ((updateError.code === "validation_failed" || updateError.code === "reauthentication_needed") && lowerMessage.includes("current password")) {
-        setNeedsCurrentPassword(true);
-        setError(t("reauthCurrentRequired"));
-        setBusy(false);
-        return;
-      }
-      if (updateError.code === "reauthentication_needed" || updateError.code === "reauth_nonce_missing") {
-        const { error: reauthError } = await getSupabase().auth.reauthenticate();
-        setBusy(false);
-        if (reauthError) return setError(passwordErrorText(reauthError as PasswordAuthProblem, t));
-        setNeedsNonce(true);
-        setStatus(t("reauthCodeSent"));
-        return;
-      }
-      setBusy(false);
-      setError(passwordErrorText(updateError as PasswordAuthProblem, t));
-      return;
-    }
+      {/* Work History Section (Directly visible without accordion) */}
+      <section className="history-section-clean">
+        <div className="history-section-header">
+          <h2>{t("oldRecords")}</h2>
+          <div className="history-filter-pills">
+            <button
+              type="button"
+              className={filter === "all" ? "active" : ""}
+              onClick={() => setFilter("all")}
+            >
+              {t("allWorks")}
+            </button>
+            <button
+              type="button"
+              className={filter === "pending" ? "active" : ""}
+              onClick={() => setFilter("pending")}
+            >
+              {t("paymentDue")}
+            </button>
+            <button
+              type="button"
+              className={filter === "paid" ? "active" : ""}
+              onClick={() => setFilter("paid")}
+            >
+              {t("paid")}
+            </button>
+          </div>
+        </div>
 
-    setBusy(false);
-    setNewPassword("");
-    setConfirmation("");
-    setCurrentPassword("");
-    setNonce("");
-    setNeedsCurrentPassword(false);
-    setNeedsNonce(false);
-    setStatus(t("passwordChanged"));
-  };
+        {filteredWorks.length ? (
+          <div className="work-cards-list">
+            {filteredWorks.map((work) => {
+              const workBalance = balanceFor(work);
+              const workPaid = paidFor(work);
+              const unit = work.charge_basis === "hour" ? t("hoursWorked") : t("acres");
+              const isPaid = workBalance <= 0;
 
-  return (
-    <section className="settings-panel password-settings" aria-labelledby="change-password-title">
-      <div className="settings-section-heading"><h2 id="change-password-title">{t("changePassword")}</h2><p>{t("changePasswordHelp")}</p></div>
-      <form className="password-settings-form" onSubmit={submit}>
-        {needsCurrentPassword && <PasswordField label={t("currentPassword")} value={currentPassword} onChange={setCurrentPassword} autoComplete="current-password" />}
-        <PasswordField label={t("newPassword")} value={newPassword} onChange={setNewPassword} autoComplete="new-password" />
-        <PasswordField label={t("confirmPassword")} value={confirmation} onChange={setConfirmation} autoComplete="new-password" />
-        {needsNonce && <label><FieldLabel label={t("reauthCode")} /><input type="text" inputMode="numeric" autoComplete="one-time-code" maxLength={6} value={nonce} onChange={(event) => setNonce(event.target.value.replace(/\D/g, ""))} required /><span className="field-help">{t("reauthCodeHelp")}</span></label>}
-        <p className="field-help full">{t("passwordRequirements")}</p>
-        {error && <p className="form-error full" role="alert">{error}</p>}
-        {status && <p className="form-success full" role="status">{status}</p>}
-        <button className="primary-button password-submit" disabled={busy}>{busy ? t("updatingPassword") : t("updatePassword")}</button>
-      </form>
-    </section>
-  );
-}
+              return (
+                <article className="work-item-card" key={work.id}>
+                  <div className="work-item-header">
+                    <div className="work-item-type-wrap">
+                      <div className="work-type-mini-icon">
+                        <WorkTypeIcon name={work.work_type_name} size={20} />
+                      </div>
+                      <div>
+                        <strong>{displayWorkType(work.work_type_name, language)}</strong>
+                        <small>{dateLabel(work.work_date)}</small>
+                      </div>
+                    </div>
+                    {isPaid ? (
+                      <span className="badge-paid">{t("fullyPaid")}</span>
+                    ) : (
+                      <span className="badge-due">{money(workBalance)} {t("pendingDueBadge")}</span>
+                    )}
+                  </div>
 
-function WorkTypeRateEditor({ workType, language, onToggle, onRefresh, setNotice }: {
-  workType: WorkType;
-  language: "te" | "en";
-  onToggle: () => void;
-  onRefresh: () => Promise<void>;
-  setNotice: (notice: Notice) => void;
-}) {
-  const { t } = useLanguage();
-  const [acreRate, setAcreRate] = useState(workType.acre_rate == null ? "" : String(workType.acre_rate));
-  const [hourRate, setHourRate] = useState(workType.hour_rate == null ? "" : String(workType.hour_rate));
-  const [busy, setBusy] = useState(false);
+                  <div className="work-item-math">
+                    <span>{work.quantity} {unit} × {money(work.rate)}</span>
+                  </div>
 
-  const saveRates = async (event: FormEvent) => {
-    event.preventDefault();
-    setBusy(true);
-    const { error } = await getSupabase().from("work_types").update({
-      acre_rate: acreRate === "" ? null : Number(acreRate),
-      hour_rate: hourRate === "" ? null : Number(hourRate),
-    }).eq("id", workType.id);
-    setBusy(false);
-    if (error) return setNotice({ tone: "error", text: friendlyError(error.message, t) });
-    setNotice({ tone: "success", text: t("ratesSaved") });
-    await onRefresh();
-  };
+                  <div className="work-item-financials">
+                    <p><span>{t("totalWork")}:</span> <b>{money(work.total)}</b></p>
+                    <p><span>{t("received")}:</span> <b>{money(workPaid)}</b></p>
+                    <p className={workBalance > 0 ? "due-red" : "paid-green"}>
+                      <span>{t("balanceDue")}:</span> <b>{money(workBalance)}</b>
+                    </p>
+                  </div>
 
-  return (
-    <div className="work-type-entry">
-      <div className="work-type-summary"><strong>{displayWorkType(workType.name, language)}</strong><div className="type-control"><span className={`type-status ${workType.active ? "active" : "inactive"}`}>{workType.active ? t("availableInForm") : t("hiddenFromForm")}</span><label className="switch"><input type="checkbox" checked={workType.active} onChange={onToggle} aria-label={`${workType.name}: ${workType.active ? t("availableInForm") : t("hiddenFromForm")}`} /><span /></label></div></div>
-      <form className="rate-editor" onSubmit={saveRates}>
-        <label><FieldLabel label={t("acreRate")} /><input type="number" min="0" step="0.01" inputMode="decimal" value={acreRate} onChange={(event) => setAcreRate(event.target.value)} placeholder="0" /></label>
-        <label><FieldLabel label={t("hourRate")} /><input type="number" min="0" step="0.01" inputMode="decimal" value={hourRate} onChange={(event) => setHourRate(event.target.value)} placeholder="0" /></label>
-        <button className="secondary-button" disabled={busy}>{busy ? t("saving") : t("saveRates")}</button>
-      </form>
+                  {/* Actions placed side-by-side */}
+                  <div className="work-item-actions-row">
+                    <button
+                      type="button"
+                      className="work-action-btn"
+                      onClick={() => onEdit(work)}
+                    >
+                      <PencilSquare size={16} /> {t("editWork")}
+                    </button>
+                    <button
+                      type="button"
+                      className="work-action-btn"
+                      onClick={() => onShare(work)}
+                    >
+                      <Whatsapp size={16} /> {t("shareReceipt")}
+                    </button>
+                    {workBalance > 0 && (
+                      <button
+                        type="button"
+                        className="work-action-btn pay-action"
+                        onClick={() => onAddPayment(work)}
+                      >
+                        <PlusLg size={16} /> {t("addPayment")}
+                      </button>
+                    )}
+                  </div>
+                </article>
+              );
+            })}
+          </div>
+        ) : (
+          <EmptyState title={t("noOldWorkHistory")} text={t("noFarmerWorkHelp")} />
+        )}
+      </section>
     </div>
   );
 }
 
-function WorkModal({ customers, workTypes, work, userId, onClose, onSaved, setNotice }: {
+// -------------------------------------------------------------
+// PENDING DUES TAB (Tab 4: బాకీలు)
+// -------------------------------------------------------------
+function PendingDuesView({
+  customers,
+  works,
+  onSelect,
+  onAddNewWork,
+}: {
+  customers: Customer[];
+  works: WorkRecord[];
+  onSelect: (customer: Customer) => void;
+  onAddNewWork: () => void;
+}) {
+  const { t } = useLanguage();
+
+  const customerDues = useMemo(() => {
+    return customers
+      .map((customer) => {
+        const customerWorks = works.filter((w) => w.customer_id === customer.id);
+        const due = customerWorks.reduce((sum, w) => sum + balanceFor(w), 0);
+        return { customer, due, workCount: customerWorks.length };
+      })
+      .filter((item) => item.due > 0)
+      .sort((a, b) => b.due - a.due);
+  }, [customers, works]);
+
+  const totalPending = customerDues.reduce((sum, item) => sum + item.due, 0);
+
+  return (
+    <div className="pending-view-content">
+      {/* Large Total Pending Card */}
+      <section className="stat-card-hero">
+        <div className="stat-hero-badge">
+          <CashCoin size={28} />
+        </div>
+        <div className="stat-hero-info">
+          <span className="stat-hero-label">{t("customerOutstandingBalance")}</span>
+          <strong className="stat-hero-amount">{money(totalPending)}</strong>
+        </div>
+      </section>
+
+      <div className="section-header-simple">
+        <h2>{t("pendingDuesSection")}</h2>
+        <span>{customerDues.length} {t("customers")}</span>
+      </div>
+
+      <div className="pending-farmers-list card-mode">
+        {customerDues.length ? (
+          customerDues.map(({ customer, due, workCount }) => (
+            <button
+              key={customer.id}
+              type="button"
+              className="farmer-due-row"
+              onClick={() => onSelect(customer)}
+            >
+              <div className="avatar-circle">
+                {customer.name.slice(0, 1).toUpperCase()}
+              </div>
+              <div className="farmer-due-info">
+                <strong>{customer.name}</strong>
+                <small>{customer.phone || t("recordCount", { count: workCount })}</small>
+              </div>
+              <div className="farmer-due-amount">
+                <span>{money(due)}</span>
+                <ChevronRight size={18} />
+              </div>
+            </button>
+          ))
+        ) : (
+          <div className="no-pending-card">
+            <CheckCircleFill size={32} color="#15803d" />
+            <p>{t("noPendingDues")}</p>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// -------------------------------------------------------------
+// ADD / EDIT WORK MODAL (Matching Reference Screen 7)
+// -------------------------------------------------------------
+function WorkModal({
+  customers,
+  workTypes,
+  work,
+  initialCustomerId,
+  userId,
+  onClose,
+  onSaved,
+  setNotice,
+  onCustomerCreated,
+}: {
   customers: Customer[];
   workTypes: WorkType[];
   work?: WorkRecord;
+  initialCustomerId?: string;
   userId: string;
   onClose: () => void;
   onSaved: (work: WorkRecord) => void;
   setNotice: (notice: Notice) => void;
+  onCustomerCreated: (customer: Customer) => void;
 }) {
   const { language, t } = useLanguage();
-  const initialCustomerMode = work ? "existing" : customers.length ? "existing" : "new";
-  const [customerMode, setCustomerMode] = useState<"existing" | "new">(initialCustomerMode);
-  const [customerId, setCustomerId] = useState(work?.customer_id ?? "");
+  const initialCustId = work?.customer_id ?? initialCustomerId ?? "";
+  const initialMode = work || initialCustId ? "existing" : customers.length ? "existing" : "new";
+  const [customerMode, setCustomerMode] = useState<"existing" | "new">(initialMode);
+  const [customerId, setCustomerId] = useState(initialCustId);
   const [farmerName, setFarmerName] = useState("");
   const [phone, setPhone] = useState("");
   const contactPickerSupported = useSyncExternalStore(
     subscribeToContactPickerSupport,
     getContactPickerSupport,
-    getServerContactPickerSupport,
+    getServerContactPickerSupport
   );
-  const [contactNumbers, setContactNumbers] = useState<string[]>([]);
-  const [selectedContactNumber, setSelectedContactNumber] = useState("");
+
   const [workDate, setWorkDate] = useState(work?.work_date ?? today());
-  const initialWorkTypeId = work?.work_type_id ?? "";
+  const initialWorkTypeId = work?.work_type_id ?? (workTypes[0]?.id ?? "");
   const initialBasis: ChargeBasis = work?.charge_basis ?? "acre";
   const [workTypeId, setWorkTypeId] = useState(initialWorkTypeId);
   const [basis, setBasis] = useState<ChargeBasis>(initialBasis);
-  const [quantity, setQuantity] = useState(work ? String(work.quantity) : "");
-  const [rate, setRate] = useState(work ? String(work.rate) : configuredRate(workTypes.find((type) => type.id === initialWorkTypeId), initialBasis));
+  const [quantity, setQuantity] = useState(work ? String(work.quantity) : "1");
+
+  const activeTypes = workTypes.filter((type) => type.active || type.id === workTypeId);
+  const selectedType = workTypes.find((type) => type.id === workTypeId);
+
+  const [rate, setRate] = useState(
+    work ? String(work.rate) : configuredRate(selectedType, initialBasis) || "2000"
+  );
   const [received, setReceived] = useState("0");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
-  const total = Math.max(0, Number(quantity) || 0) * Math.max(0, Number(rate) || 0);
+
+  const numQty = Math.max(0, Number(quantity) || 0);
+  const numRate = Math.max(0, Number(rate) || 0);
+  const total = Math.round(numQty * numRate * 100) / 100;
   const alreadyPaid = work ? paidFor(work) : 0;
-  const activeTypes = workTypes.filter((type) => type.active || type.id === workTypeId);
-  const isDirty = customerMode !== initialCustomerMode ||
-    customerId !== (work?.customer_id ?? "") ||
+  const numReceived = Math.max(0, Number(received) || 0);
+  const remainingDue = Math.max(0, total - (work ? alreadyPaid : numReceived));
+
+  const isDirty = customerMode !== initialMode ||
+    customerId !== initialCustId ||
     farmerName !== "" || phone !== "" ||
     workDate !== (work?.work_date ?? today()) ||
     workTypeId !== initialWorkTypeId || basis !== initialBasis ||
-    quantity !== (work ? String(work.quantity) : "") ||
-    rate !== (work ? String(work.rate) : configuredRate(workTypes.find((type) => type.id === initialWorkTypeId), initialBasis)) ||
+    quantity !== (work ? String(work.quantity) : "1") ||
+    rate !== (work ? String(work.rate) : configuredRate(selectedType, initialBasis)) ||
     received !== "0";
+
   const requestClose = useUnsavedChangesGuard(isDirty && !busy);
   const closeWithConfirmation = () => requestClose(onClose);
 
   const selectWorkType = (nextWorkTypeId: string) => {
     setWorkTypeId(nextWorkTypeId);
-    setRate(configuredRate(workTypes.find((type) => type.id === nextWorkTypeId), basis));
+    const targetType = workTypes.find((type) => type.id === nextWorkTypeId);
+    const newRate = configuredRate(targetType, basis);
+    if (newRate) setRate(newRate);
   };
 
   const selectBasis = (nextBasis: ChargeBasis) => {
     setBasis(nextBasis);
-    setRate(configuredRate(workTypes.find((type) => type.id === workTypeId), nextBasis));
+    const newRate = configuredRate(selectedType, nextBasis);
+    if (newRate) setRate(newRate);
+  };
+
+  const adjustQuantity = (delta: number) => {
+    const current = Number(quantity) || 0;
+    const next = Math.max(0.25, Math.round((current + delta) * 100) / 100);
+    setQuantity(String(next));
   };
 
   const selectContact = async () => {
     const contacts = navigator.contacts;
     if (!contacts) return;
-
     try {
       const selected = await contacts.select(["name", "tel"], { multiple: false });
       const contact = selected[0];
       if (!contact) return;
-
-      const selectedName = contact.name?.find((name) => name.trim())?.trim();
-      const numbers = [...new Set((contact.tel ?? []).map((number) => number.trim()).filter(Boolean))];
-
+      const selectedName = contact.name?.find((n) => n.trim())?.trim();
+      const numbers = [...new Set((contact.tel ?? []).map((num) => num.trim()).filter(Boolean))];
       if (selectedName) setFarmerName(selectedName);
-      if (numbers.length > 0) {
-        setPhone(numbers[0]);
-        setSelectedContactNumber(numbers[0]);
-      }
-      setContactNumbers(numbers.length > 1 ? numbers : []);
-    } catch (pickerError) {
-      if (pickerError instanceof DOMException && pickerError.name === "AbortError") return;
+      if (numbers.length > 0) setPhone(numbers[0]);
+    } catch {
       setError(t("contactPickerError"));
     }
   };
@@ -1190,48 +1667,71 @@ function WorkModal({ customers, workTypes, work, userId, onClose, onSaved, setNo
     const qty = Number(quantity);
     const unitRate = Number(rate);
     const initialPayment = Number(received || 0);
+
     if ((work || customerMode === "existing") && !customerId) return setError(t("chooseFarmer"));
     if (!work && customerMode === "new" && !farmerName.trim()) return setError(t("enterFarmerName"));
     if (!workTypeId) return setError(t("chooseWorkType"));
     if (qty <= 0 || unitRate < 0 || initialPayment < 0) return setError(t("invalidAmounts"));
     if (work && total < alreadyPaid) return setError(t("totalBelowPaid", { amount: money(alreadyPaid) }));
     if (!work && initialPayment > total) return setError(t("receivedTooHigh"));
+
     setBusy(true);
     const supabase = getSupabase();
     let finalCustomerId = customerId;
+
     if (!work && customerMode === "new") {
-      const { data, error: customerError } = await supabase.from("customers").insert({ user_id: userId, name: farmerName.trim(), phone: phone.trim() || null }).select().single();
+      const { data, error: customerError } = await supabase
+        .from("customers")
+        .insert({ user_id: userId, name: farmerName.trim(), phone: phone.trim() || null })
+        .select()
+        .single();
       if (customerError) {
         setBusy(false);
         return setError(friendlyError(customerError.message, t));
       }
       finalCustomerId = data.id;
+      onCustomerCreated(data as Customer);
     }
+
     if (!finalCustomerId) {
       setBusy(false);
       return setError(t("chooseFarmer"));
     }
-    const selectedType = workTypes.find((type) => type.id === workTypeId);
+
+    const currentSelectedType = workTypes.find((type) => type.id === workTypeId);
     const values = {
       user_id: userId,
       customer_id: finalCustomerId,
       work_type_id: workTypeId,
-      work_type_name: selectedType?.name ?? work?.work_type_name ?? "Work",
+      work_type_name: currentSelectedType?.name ?? work?.work_type_name ?? "Work",
       work_date: workDate,
       charge_basis: basis,
       quantity: qty,
       rate: unitRate,
     };
+
     const result = work
       ? await supabase.from("work_records").update(values).eq("id", work.id).select("*, customer:customers(*), payments(*)").single()
       : await supabase.from("work_records").insert(values).select("*, customer:customers(*), payments(*)").single();
+
     if (result.error) {
       setBusy(false);
       return setError(friendlyError(result.error.message, t));
     }
+
     let saved = result.data as unknown as WorkRecord;
     if (!work && initialPayment > 0) {
-      const { data: payment, error: paymentError } = await supabase.from("payments").insert({ user_id: userId, work_record_id: saved.id, payment_date: workDate, amount: initialPayment, method: "Cash" }).select().single();
+      const { data: payment, error: paymentError } = await supabase
+        .from("payments")
+        .insert({
+          user_id: userId,
+          work_record_id: saved.id,
+          payment_date: workDate,
+          amount: initialPayment,
+          method: "Cash",
+        })
+        .select()
+        .single();
       if (paymentError) {
         setBusy(false);
         setNotice({ tone: "error", text: t("workSavedPaymentFailed", { error: paymentError.message }) });
@@ -1239,84 +1739,484 @@ function WorkModal({ customers, workTypes, work, userId, onClose, onSaved, setNo
         saved = { ...saved, payments: [payment as Payment] };
       }
     }
+
     setBusy(false);
-    setNotice({ tone: "success", text: work ? t("workUpdated") : t("savedSuccessfully") });
     onSaved(saved);
   };
 
   return (
     <div className="modal-backdrop" role="presentation">
-      <section className="modal work-modal" role="dialog" aria-modal="true" aria-labelledby="work-title">
-        <div className="modal-head"><div><p className="eyebrow">{work ? t("editRecord") : t("newRecord")}</p><h2 id="work-title">{work ? t("editWork") : t("addWork")}</h2></div><IconButton icon={X} label={t("close")} onClick={closeWithConfirmation} /></div>
-        <form onSubmit={submit} className="form-grid">
-          {!work && <div className="full"><FieldLabel label={t("farmerName")} /><div className="segmented"><button type="button" className={customerMode === "existing" ? "active" : ""} onClick={() => setCustomerMode("existing")}>{t("existingFarmer")}</button><button type="button" className={customerMode === "new" ? "active" : ""} onClick={() => setCustomerMode("new")}>{t("newFarmer")}</button></div></div>}
-          {(work || customerMode === "existing") ? (
-            <label className="full"><FieldLabel label={t("farmerName")} /><select value={customerId} onChange={(event) => { setCustomerId(event.target.value); setError(""); }} onInvalid={(event) => { event.preventDefault(); setError(t("chooseFarmer")); }} required><option value="" disabled>{t("selectFarmer")}</option>{customers.map((customer) => <option key={customer.id} value={customer.id}>{customer.name}{customer.phone ? ` · ${customer.phone}` : ""}</option>)}</select></label>
-          ) : <>
-            {contactPickerSupported && <button type="button" className="secondary-button contact-picker-button full" onClick={() => void selectContact()}><Phone size={20} />{t("selectContact")}</button>}
-            <label><FieldLabel label={t("farmerName")} /><input value={farmerName} onChange={(event) => setFarmerName(event.target.value)} required /></label>
-            <label><FieldLabel label={t("phoneNumber")} /><input type="tel" inputMode="tel" value={phone} onChange={(event) => { setPhone(event.target.value); setSelectedContactNumber(contactNumbers.includes(event.target.value) ? event.target.value : ""); }} placeholder={t("optional")} /></label>
-            {contactNumbers.length > 1 && <label className="full"><FieldLabel label={t("chooseContactNumber")} /><select value={selectedContactNumber} onChange={(event) => { setSelectedContactNumber(event.target.value); setPhone(event.target.value); }}>{contactNumbers.map((number) => <option key={number} value={number}>{number}</option>)}</select></label>}
-          </>}
-          <label><FieldLabel label={t("workDate")} /><input type="date" value={workDate} onChange={(event) => setWorkDate(event.target.value)} required /></label>
-          <label><FieldLabel label={t("workType")} /><select value={workTypeId} onChange={(event) => { selectWorkType(event.target.value); setError(""); }} onInvalid={(event) => { event.preventDefault(); setError(t("chooseWorkType")); }} required><option value="" disabled>{t("selectWorkType")}</option>{activeTypes.map((type) => <option key={type.id} value={type.id}>{displayWorkType(type.name, language)}</option>)}</select></label>
-          <label className="full"><FieldLabel label={t("chargeBasis")} /><select value={basis} onChange={(event) => selectBasis(event.target.value as ChargeBasis)}><option value="acre">{t("perAcre")}</option><option value="hour">{t("perHour")}</option></select></label>
-          <label><FieldLabel label={basis === "hour" ? t("hoursWorked") : t("acres")} /><input type="number" min="0.01" step="0.01" inputMode="decimal" value={quantity} onChange={(event) => setQuantity(event.target.value)} required /></label>
-          <label><FieldLabel label={basis === "hour" ? t("ratePerHour") : t("ratePerAcre")} /><div className="money-input"><span>₹</span><input type="number" min="0" step="0.01" inputMode="decimal" value={rate} onChange={(event) => setRate(event.target.value)} required /></div></label>
-          {!work && <label className="full"><FieldLabel label={t("amountReceived")} /><div className="money-input"><span>₹</span><input type="number" min="0" max={total} step="0.01" inputMode="decimal" value={received} onChange={(event) => setReceived(event.target.value)} /></div></label>}
-          <div className="calculation full"><div><span>{t("totalAmount")}</span><strong>{money(total)}</strong></div><div><span>{work ? t("balanceAfterPayments") : t("balanceDue")}</span><strong>{money(Math.max(0, total - (work ? alreadyPaid : Number(received) || 0)))}</strong></div></div>
-          {error && <p className="form-error full">{error}</p>}
-          <div className="modal-actions full"><button type="button" className="secondary-button" onClick={closeWithConfirmation}>{t("cancel")}</button><button className="primary-button" disabled={busy}>{busy ? t("saving") : work ? t("saveChanges") : t("save")}</button></div>
+      <section className="modal work-modal" role="dialog" aria-modal="true" aria-labelledby="work-modal-title">
+        <div className="modal-head">
+          <div>
+            <p className="eyebrow">{work ? t("editRecord") : t("newRecord")}</p>
+            <h2 id="work-modal-title">{work ? t("editWork") : t("addWork")}</h2>
+          </div>
+          <IconButton icon={X} label={t("close")} onClick={closeWithConfirmation} />
+        </div>
+
+        <form onSubmit={submit} className="add-work-form">
+          {/* 1. ఎవరి పని? (Customer Select) */}
+          <div className="form-section">
+            <div className="form-section-title-row">
+              <FieldLabel label={t("whoseWork")} />
+              {!work && (
+                <div className="customer-mode-pills">
+                  <button
+                    type="button"
+                    className={customerMode === "existing" ? "active" : ""}
+                    onClick={() => setCustomerMode("existing")}
+                  >
+                    {t("existingFarmer")}
+                  </button>
+                  <button
+                    type="button"
+                    className={customerMode === "new" ? "active" : ""}
+                    onClick={() => setCustomerMode("new")}
+                  >
+                    {t("newFarmer")}
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {customerMode === "existing" || work ? (
+              <div className="select-wrap">
+                <select
+                  value={customerId}
+                  onChange={(e) => { setCustomerId(e.target.value); setError(""); }}
+                  required
+                >
+                  <option value="" disabled>{t("selectFarmer")}...</option>
+                  {customers.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.name} {c.phone ? `(${c.phone})` : ""}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            ) : (
+              <div className="new-farmer-fields">
+                {contactPickerSupported && (
+                  <button
+                    type="button"
+                    className="contact-picker-btn"
+                    onClick={() => void selectContact()}
+                  >
+                    <Phone size={16} /> {t("selectContact")}
+                  </button>
+                )}
+                <input
+                  placeholder={t("farmerName")}
+                  value={farmerName}
+                  onChange={(e) => setFarmerName(e.target.value)}
+                  required
+                />
+                <input
+                  type="tel"
+                  placeholder={t("phoneNumber") + " (" + t("optional") + ")"}
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                />
+              </div>
+            )}
+          </div>
+
+          {/* 2. ఏ పని చేశారు? (Work Type Grid of Tiles with Icons) */}
+          <div className="form-section">
+            <FieldLabel label={t("whatWorkDone")} />
+            <div className="work-type-tiles-grid">
+              {activeTypes.map((type) => {
+                const isSelected = type.id === workTypeId;
+                const meta = getWorkTypeMeta(type.name);
+                return (
+                  <button
+                    key={type.id}
+                    type="button"
+                    className={`work-type-tile ${isSelected ? "selected" : ""}`}
+                    onClick={() => selectWorkType(type.id)}
+                    style={{
+                      borderColor: isSelected ? "#15803d" : meta.border,
+                      background: isSelected ? "#f0fdf4" : meta.bg,
+                    }}
+                  >
+                    <div className="tile-icon-wrap" style={{ background: isSelected ? "#dcfce7" : "#ffffff" }}>
+                      <WorkTypeIcon name={type.name} size={28} />
+                    </div>
+                    <span className="tile-name">
+                      {displayWorkType(type.name, language)}
+                    </span>
+                    {isSelected && (
+                      <div className="tile-check-badge">
+                        <CheckCircleFill size={14} color="#15803d" />
+                      </div>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* 3. తేదీ & లెక్కింపు విధానం (Date & Acre/Hour Toggle) */}
+          <div className="form-row-two">
+            <label className="input-group">
+              <FieldLabel label={t("workDate")} />
+              <input
+                type="date"
+                value={workDate}
+                onChange={(e) => setWorkDate(e.target.value)}
+                required
+              />
+            </label>
+
+            <div className="input-group">
+              <FieldLabel label={t("chargeBasis")} />
+              <div className="segmented-toggle">
+                <button
+                  type="button"
+                  className={basis === "acre" ? "active" : ""}
+                  onClick={() => selectBasis("acre")}
+                >
+                  {t("perAcre")}
+                </button>
+                <button
+                  type="button"
+                  className={basis === "hour" ? "active" : ""}
+                  onClick={() => selectBasis("hour")}
+                >
+                  {t("perHour")}
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* 4. ఎన్ని ఎకరాలు / గంటలు? (Quantity with Stepper) & ధర (Rate) */}
+          <div className="form-row-two">
+            <div className="input-group">
+              <FieldLabel label={basis === "acre" ? t("howManyAcres") : t("howManyHours")} />
+              <div className="stepper-input">
+                <button type="button" onClick={() => adjustQuantity(-0.5)}>
+                  <Dash size={18} />
+                </button>
+                <input
+                  type="number"
+                  step="0.01"
+                  min="0.01"
+                  value={quantity}
+                  onChange={(e) => setQuantity(e.target.value)}
+                  required
+                />
+                <button type="button" onClick={() => adjustQuantity(0.5)}>
+                  <Plus size={18} />
+                </button>
+              </div>
+            </div>
+
+            <label className="input-group">
+              <FieldLabel label={basis === "acre" ? t("ratePerAcreShort") : t("ratePerHourShort")} />
+              <div className="currency-input-wrap">
+                <span>₹</span>
+                <input
+                  type="number"
+                  step="1"
+                  min="0"
+                  value={rate}
+                  onChange={(e) => setRate(e.target.value)}
+                  required
+                />
+              </div>
+            </label>
+          </div>
+
+          {/* 5. ఇప్పుడు ఇచ్చిన డబ్బు (Down Payment) if creating new work */}
+          {!work && (
+            <label className="input-group">
+              <FieldLabel label={t("nowReceived")} />
+              <div className="currency-input-wrap">
+                <span>₹</span>
+                <input
+                  type="number"
+                  step="1"
+                  min="0"
+                  max={total}
+                  value={received}
+                  onChange={(e) => setReceived(e.target.value)}
+                />
+              </div>
+            </label>
+          )}
+
+          {/* 6. Summary Calculation Card (3 Columns) */}
+          <div className="work-summary-calc-card">
+            <div className="calc-col">
+              <span>{t("totalWork")}</span>
+              <strong>{money(total)}</strong>
+            </div>
+            <div className="calc-col">
+              <span>{t("nowReceived")}</span>
+              <strong>{money(work ? alreadyPaid : numReceived)}</strong>
+            </div>
+            <div className="calc-col due-col">
+              <span>{t("remainingBalanceDue")}</span>
+              <strong>{money(remainingDue)}</strong>
+            </div>
+          </div>
+
+          {error && <p className="form-error" role="alert">{error}</p>}
+
+          <div className="form-actions-sticky">
+            <button type="submit" className="save-work-submit-btn" disabled={busy}>
+              {busy ? t("saving") : t("saveWorkBtn")}
+            </button>
+          </div>
         </form>
       </section>
     </div>
   );
 }
 
-function PaymentModal({ work, onClose, onSaved, setNotice }: { work: WorkRecord; onClose: () => void; onSaved: () => void; setNotice: (notice: Notice) => void }) {
+// -------------------------------------------------------------
+// WORK SAVED & SHARE MODAL (Matching Reference Screen 9)
+// -------------------------------------------------------------
+function WorkSavedModal({
+  work,
+  onClose,
+  onGoToCustomer,
+}: {
+  work: WorkRecord;
+  onClose: () => void;
+  onGoToCustomer: () => void;
+}) {
+  const { language, t } = useLanguage();
+  const customer = work.customer;
+  const balance = balanceFor(work);
+  const paid = paidFor(work);
+  const date = new Date(`${work.work_date}T00:00:00`).toLocaleDateString(
+    language === "te" ? "te-IN-u-nu-latn" : "en-IN",
+    { day: "numeric", month: "short", year: "numeric" }
+  );
+  const unit = work.charge_basis === "hour" ? t("hoursWorked") : t("acres");
+  const phone = customer?.phone?.replace(/[^\d+]/g, "") ?? "";
+
+  const receipt = `${t("receiptTitle")}\n\n${t("receiptFarmer")}: ${customer?.name ?? "-"}\n${t("receiptDate")}: ${date}\n${t("receiptWork")}: ${displayWorkType(work.work_type_name, language)}\n${t("sharedWorkDetails")}: ${work.quantity} ${unit} × ${money(work.rate)}\n${t("receiptTotal")}: ${money(work.total)}\n\n${paymentStatus(balance)}\n\n${t("thankYou")}`;
+
+  return (
+    <div className="modal-backdrop top-layer" role="presentation">
+      <section className="modal work-saved-modal" role="dialog" aria-modal="true">
+        {/* Large Green Checkmark */}
+        <div className="saved-success-badge">
+          <CheckCircleFill size={64} color="#15803d" />
+        </div>
+        <h2 className="saved-success-title">{t("workSavedTitle")}</h2>
+
+        {/* Work summary card */}
+        <div className="saved-summary-card">
+          <div className="saved-customer-head">
+            <div className="avatar-circle">
+              {customer?.name ? customer.name.slice(0, 1).toUpperCase() : "R"}
+            </div>
+            <div>
+              <strong>{customer?.name}</strong>
+              <small>{displayWorkType(work.work_type_name, language)} - {work.quantity} {unit}</small>
+            </div>
+          </div>
+
+          <div className="saved-detail-lines">
+            <div className="line">
+              <span>{work.charge_basis === "hour" ? t("ratePerHourShort") : t("ratePerAcreShort")}:</span>
+              <b>{money(work.rate)}</b>
+            </div>
+            <div className="line">
+              <span>{t("totalWork")}:</span>
+              <b>{money(work.total)}</b>
+            </div>
+            <div className="line">
+              <span>{t("received")}:</span>
+              <b>{money(paid)}</b>
+            </div>
+            <div className="line due-line">
+              <span>{t("pendingDueBadge")}:</span>
+              <b>{money(balance)}</b>
+            </div>
+          </div>
+        </div>
+
+        {/* WhatsApp & Home Buttons */}
+        <div className="saved-actions">
+          <a
+            className="whatsapp-primary-share-btn"
+            href={`https://wa.me/${phone}?text=${encodeURIComponent(receipt)}`}
+            target="_blank"
+            rel="noreferrer"
+          >
+            <Whatsapp size={22} />
+            <span>{t("shareOnWhatsApp")}</span>
+          </a>
+
+          <button type="button" className="home-secondary-btn" onClick={onClose}>
+            {t("goToHome")}
+          </button>
+        </div>
+      </section>
+    </div>
+  );
+}
+
+// -------------------------------------------------------------
+// ADD PAYMENT MODAL (Matching Reference Screen 8)
+// -------------------------------------------------------------
+function PaymentModal({
+  work,
+  onClose,
+  onSaved,
+  setNotice,
+}: {
+  work: WorkRecord;
+  onClose: () => void;
+  onSaved: () => void;
+  setNotice: (notice: Notice) => void;
+}) {
   const { t } = useLanguage();
   const balance = balanceFor(work);
-  const [amount, setAmount] = useState("");
+  const [amount, setAmount] = useState(String(balance));
   const [date, setDate] = useState(today());
-  const [method, setMethod] = useState("");
+  const [method, setMethod] = useState("Cash");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
-  const isDirty = amount !== "" || date !== today() || method !== "";
+
+  const numAmount = Math.max(0, Number(amount) || 0);
+  const remainingAfter = Math.max(0, balance - numAmount);
+
+  const isDirty = amount !== String(balance) || date !== today() || method !== "Cash";
   const requestClose = useUnsavedChangesGuard(isDirty && !busy);
   const closeWithConfirmation = () => requestClose(onClose);
+
   const submit = async (event: FormEvent) => {
     event.preventDefault();
     const value = Number(amount);
     if (!method) return setError(t("choosePaymentMethod"));
     if (value <= 0) return setError(t("paymentPositive"));
     if (value > balance) return setError(t("paymentTooHigh", { amount: money(balance) }));
+
     setBusy(true);
     const { data: userData } = await getSupabase().auth.getUser();
-    const { error: saveError } = await getSupabase().from("payments").insert({ user_id: userData.user?.id, work_record_id: work.id, payment_date: date, amount: value, method });
+    const { error: saveError } = await getSupabase().from("payments").insert({
+      user_id: userData.user?.id,
+      work_record_id: work.id,
+      payment_date: date,
+      amount: value,
+      method,
+    });
     setBusy(false);
-    if (saveError) setError(friendlyError(saveError.message, t));
-    else {
+
+    if (saveError) {
+      setError(friendlyError(saveError.message, t));
+    } else {
       setNotice({ tone: "success", text: t("paymentSaved") });
       onSaved();
     }
   };
+
   return (
-    <div className="modal-backdrop top-layer">
-      <section className="modal compact-modal" role="dialog" aria-modal="true">
-        <div className="modal-head"><div><p className="eyebrow">{t("balanceDue")}: {money(balance)}</p><h2>{t("addPayment")}</h2></div><IconButton icon={X} label={t("close")} onClick={closeWithConfirmation} /></div>
-        <form onSubmit={submit} className="stack-form">
-          <label><FieldLabel label={t("paymentDate")} /><input type="date" value={date} onChange={(event) => setDate(event.target.value)} required /></label>
-          <label><FieldLabel label={t("amount")} /><div className="money-input"><span>₹</span><input type="number" min="0.01" max={balance} step="0.01" inputMode="decimal" value={amount} onChange={(event) => setAmount(event.target.value)} required /></div></label>
-          <label><FieldLabel label={t("paymentMethod")} /><select value={method} onChange={(event) => { setMethod(event.target.value); setError(""); }} onInvalid={(event) => { event.preventDefault(); setError(t("choosePaymentMethod")); }} required><option value="" disabled>{t("selectPaymentMethod")}</option><option value="Cash">{t("cash")}</option><option value="UPI">{t("upi")}</option><option value="Bank transfer">{t("bankTransfer")}</option><option value="Other">{t("other")}</option></select></label>
-          {error && <p className="form-error">{error}</p>}
-          <button className="primary-button" disabled={busy}>{busy ? t("saving") : t("savePayment")}</button>
+    <div className="modal-backdrop top-layer" role="presentation">
+      <section className="modal payment-screen-modal" role="dialog" aria-modal="true">
+        <div className="modal-head">
+          <div>
+            <p className="eyebrow">{work.customer?.name}</p>
+            <h2>{t("addPayment")}</h2>
+          </div>
+          <IconButton icon={X} label={t("close")} onClick={closeWithConfirmation} />
+        </div>
+
+        <form onSubmit={submit} className="payment-form">
+          {/* Customer info preview */}
+          <div className="payment-customer-row">
+            <div className="avatar-circle">
+              {work.customer?.name ? work.customer.name.slice(0, 1).toUpperCase() : "R"}
+            </div>
+            <strong>{work.customer?.name}</strong>
+          </div>
+
+          {/* ప్రస్తుత బాకీ (Current Balance - Pale Red) */}
+          <div className="stat-card-hero compact">
+            <div className="stat-hero-badge">
+              <CashCoin size={24} />
+            </div>
+            <div className="stat-hero-info">
+              <span className="stat-hero-label">{t("currentBalance")}</span>
+              <strong className="stat-hero-amount">{money(balance)}</strong>
+            </div>
+          </div>
+
+          {/* ఎంత ఇచ్చారు? (Amount Received Input) */}
+          <label className="input-group">
+            <FieldLabel label={t("howMuchPaid")} />
+            <div className="currency-input-wrap large">
+              <span>₹</span>
+              <input
+                type="number"
+                min="0.01"
+                max={balance}
+                step="0.01"
+                inputMode="decimal"
+                value={amount}
+                onChange={(e) => setAmount(e.target.value)}
+                required
+                autoFocus
+              />
+            </div>
+          </label>
+
+          {/* చెల్లింపు తేదీ & విధానం */}
+          <div className="form-row-two">
+            <label className="input-group">
+              <FieldLabel label={t("paymentDate")} />
+              <input
+                type="date"
+                value={date}
+                onChange={(e) => setDate(e.target.value)}
+                required
+              />
+            </label>
+
+            <label className="input-group">
+              <FieldLabel label={t("paymentMethod")} />
+              <select value={method} onChange={(e) => setMethod(e.target.value)} required>
+                <option value="Cash">{t("cash")}</option>
+                <option value="UPI">{t("upi")}</option>
+                <option value="Bank transfer">{t("bankTransfer")}</option>
+                <option value="Other">{t("other")}</option>
+              </select>
+            </label>
+          </div>
+
+          {/* మిగిలిన బాకీ (Remaining Balance - Pale Green) */}
+          <div className="remaining-balance-pill">
+            <span>{t("remainingBalanceDue")}</span>
+            <strong>{money(remainingAfter)}</strong>
+          </div>
+
+          {error && <p className="form-error" role="alert">{error}</p>}
+
+          <button className="save-work-submit-btn" disabled={busy}>
+            {busy ? t("saving") : t("recordPaymentBtn")}
+          </button>
         </form>
       </section>
     </div>
   );
 }
 
-function CustomerPaymentModal({ customer, works, onClose, onSaved, setNotice }: {
+// -------------------------------------------------------------
+// CUSTOMER-WIDE PAYMENT MODAL (Oldest-First FIFO Allocation)
+// -------------------------------------------------------------
+function CustomerPaymentModal({
+  customer,
+  works,
+  onClose,
+  onSaved,
+  setNotice,
+}: {
   customer: Customer;
   works: WorkRecord[];
   onClose: () => void;
@@ -1328,14 +2228,15 @@ function CustomerPaymentModal({ customer, works, onClose, onSaved, setNotice }: 
   const initialAmount = String(balance);
   const [amount, setAmount] = useState(initialAmount);
   const [date, setDate] = useState(today());
-  const [method, setMethod] = useState("");
+  const [method, setMethod] = useState("Cash");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   const [requestId] = useState(() => crypto.randomUUID());
   const submitting = useRef(false);
+
   const enteredAmount = Number(amount);
   const remainingBalance = Math.max(0, balance - (Number.isFinite(enteredAmount) ? enteredAmount : 0));
-  const isDirty = amount !== initialAmount || date !== today() || method !== "";
+  const isDirty = amount !== initialAmount || date !== today() || method !== "Cash";
   const requestClose = useUnsavedChangesGuard(isDirty && !busy);
   const closeWithConfirmation = () => requestClose(onClose);
 
@@ -1376,84 +2277,703 @@ function CustomerPaymentModal({ customer, works, onClose, onSaved, setNotice }: 
   };
 
   return (
-    <div className="modal-backdrop top-layer">
-      <section className="modal compact-modal" role="dialog" aria-modal="true" aria-labelledby="customer-payment-title">
-        <div className="modal-head"><div><p className="eyebrow">{customer.name}</p><h2 id="customer-payment-title">{t("addPayment")}</h2></div><IconButton icon={X} label={t("close")} onClick={closeWithConfirmation} /></div>
-        <div className="customer-payment-balance"><span>{t("customerOutstandingBalance")}</span><strong>{money(balance)}</strong></div>
-        <form onSubmit={submit} className="stack-form">
-          <label><FieldLabel label={t("amountReceived")} /><div className="money-input"><span>₹</span><input type="number" min="0.01" max={balance} step="0.01" inputMode="decimal" value={amount} onChange={(event) => { setAmount(event.target.value); setError(""); }} required autoFocus /></div></label>
-          <label><FieldLabel label={t("paymentDate")} /><input type="date" value={date} onChange={(event) => setDate(event.target.value)} required /></label>
-          <label><FieldLabel label={t("paymentMethod")} /><select value={method} onChange={(event) => { setMethod(event.target.value); setError(""); }} onInvalid={(event) => { event.preventDefault(); setError(t("choosePaymentMethod")); }} required><option value="" disabled>{t("selectPaymentMethod")}</option><option value="Cash">{t("cash")}</option><option value="UPI">{t("upi")}</option><option value="Bank transfer">{t("bankTransfer")}</option><option value="Other">{t("other")}</option></select></label>
-          <div className="customer-payment-remaining"><span>{t("remainingAfterPayment")}</span><strong>{money(remainingBalance)}</strong></div>
+    <div className="modal-backdrop top-layer" role="presentation">
+      <section className="modal payment-screen-modal" role="dialog" aria-modal="true">
+        <div className="modal-head">
+          <div>
+            <p className="eyebrow">{customer.name}</p>
+            <h2>{t("addPayment")}</h2>
+          </div>
+          <IconButton icon={X} label={t("close")} onClick={closeWithConfirmation} />
+        </div>
+
+        <form onSubmit={submit} className="payment-form">
+          {/* Customer info */}
+          <div className="payment-customer-row">
+            <div className="avatar-circle">
+              {customer.name.slice(0, 1).toUpperCase()}
+            </div>
+            <strong>{customer.name}</strong>
+          </div>
+
+          {/* ప్రస్తుత బాకీ (Pale Red) */}
+          <div className="stat-card-hero compact">
+            <div className="stat-hero-badge">
+              <CashCoin size={24} />
+            </div>
+            <div className="stat-hero-info">
+              <span className="stat-hero-label">{t("currentBalance")}</span>
+              <strong className="stat-hero-amount">{money(balance)}</strong>
+            </div>
+          </div>
+
+          {/* ఎంత ఇచ్చారు? */}
+          <label className="input-group">
+            <FieldLabel label={t("howMuchPaid")} />
+            <div className="currency-input-wrap large">
+              <span>₹</span>
+              <input
+                type="number"
+                min="0.01"
+                max={balance}
+                step="0.01"
+                inputMode="decimal"
+                value={amount}
+                onChange={(e) => setAmount(e.target.value)}
+                required
+                autoFocus
+              />
+            </div>
+          </label>
+
+          <div className="form-row-two">
+            <label className="input-group">
+              <FieldLabel label={t("paymentDate")} />
+              <input
+                type="date"
+                value={date}
+                onChange={(e) => setDate(e.target.value)}
+                required
+              />
+            </label>
+
+            <label className="input-group">
+              <FieldLabel label={t("paymentMethod")} />
+              <select value={method} onChange={(e) => setMethod(e.target.value)} required>
+                <option value="Cash">{t("cash")}</option>
+                <option value="UPI">{t("upi")}</option>
+                <option value="Bank transfer">{t("bankTransfer")}</option>
+                <option value="Other">{t("other")}</option>
+              </select>
+            </label>
+          </div>
+
+          {/* మిగిలిన బాకీ (Pale Green) */}
+          <div className="remaining-balance-pill">
+            <span>{t("remainingBalanceDue")}</span>
+            <strong>{money(remainingBalance)}</strong>
+          </div>
+
           <p className="field-help">{t("oldestWorkAllocationHelp")}</p>
           {error && <p className="form-error" role="alert">{error}</p>}
-          <button className="primary-button" disabled={busy}>{busy ? t("saving") : t("savePayment")}</button>
+
+          <button className="save-work-submit-btn" disabled={busy}>
+            {busy ? t("saving") : t("recordPaymentBtn")}
+          </button>
         </form>
       </section>
     </div>
   );
 }
 
+// -------------------------------------------------------------
+// NEW CUSTOMER MODAL
+// -------------------------------------------------------------
+function NewCustomerModal({
+  userId,
+  onClose,
+  onSaved,
+  setNotice,
+}: {
+  userId: string;
+  onClose: () => void;
+  onSaved: (customer: Customer) => void;
+  setNotice: (notice: Notice) => void;
+}) {
+  const { t } = useLanguage();
+  const [name, setName] = useState("");
+  const [phone, setPhone] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+
+  const submit = async (event: FormEvent) => {
+    event.preventDefault();
+    if (!name.trim()) return setError(t("enterFarmerName"));
+    setBusy(true);
+    setError("");
+    const { data, error: insertError } = await getSupabase()
+      .from("customers")
+      .insert({
+        user_id: userId,
+        name: name.trim(),
+        phone: phone.trim() || null,
+      })
+      .select()
+      .single();
+    setBusy(false);
+
+    if (insertError) {
+      setError(friendlyError(insertError.message, t));
+    } else {
+      setNotice({ tone: "success", text: t("savedSuccessfully") });
+      onSaved(data as Customer);
+    }
+  };
+
+  return (
+    <div className="modal-backdrop top-layer" role="presentation">
+      <section className="modal compact-modal" role="dialog" aria-modal="true">
+        <div className="modal-head">
+          <div>
+            <p className="eyebrow">{t("customers")}</p>
+            <h2>{t("addNewCustomer")}</h2>
+          </div>
+          <IconButton icon={X} label={t("close")} onClick={onClose} />
+        </div>
+        <form onSubmit={submit} className="stack-form">
+          <label className="input-group">
+            <FieldLabel label={t("farmerName")} />
+            <input
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="e.g. Ramesh"
+              required
+              autoFocus
+            />
+          </label>
+          <label className="input-group">
+            <FieldLabel label={t("phoneNumber")} />
+            <input
+              type="tel"
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+              placeholder="e.g. 9876543210"
+            />
+          </label>
+          {error && <p className="form-error" role="alert">{error}</p>}
+          <button className="login-submit-button" disabled={busy}>
+            {busy ? t("saving") : t("save")}
+          </button>
+        </form>
+      </section>
+    </div>
+  );
+}
+
+// -------------------------------------------------------------
+// WORK TYPES & RATES (Matching Reference Screen 11)
+// -------------------------------------------------------------
+function WorkTypeSettings({
+  workTypes,
+  onRefresh,
+  setNotice,
+}: {
+  workTypes: WorkType[];
+  onRefresh: () => Promise<void>;
+  setNotice: (notice: Notice) => void;
+}) {
+  const { language, t } = useLanguage();
+  const [name, setName] = useState("");
+
+  const add = async (event: FormEvent) => {
+    event.preventDefault();
+    const value = name.trim();
+    if (!value) return;
+    const { data: userData } = await getSupabase().auth.getUser();
+    const { error } = await getSupabase()
+      .from("work_types")
+      .insert({ name: value, user_id: userData.user?.id });
+    if (error) {
+      setNotice({ tone: "error", text: friendlyError(error.message, t) });
+    } else {
+      setName("");
+      setNotice({ tone: "success", text: t("workTypeAdded") });
+      await onRefresh();
+    }
+  };
+
+  const toggle = async (workType: WorkType) => {
+    const { error } = await getSupabase()
+      .from("work_types")
+      .update({ active: !workType.active })
+      .eq("id", workType.id);
+    if (error) setNotice({ tone: "error", text: friendlyError(error.message, t) });
+    else await onRefresh();
+  };
+
+  return (
+    <div className="work-types-settings-page">
+      <div className="work-types-list-cards">
+        {workTypes.map((type) => (
+          <WorkTypeRateRow
+            key={type.id}
+            workType={type}
+            language={language}
+            onToggle={() => void toggle(type)}
+            onRefresh={onRefresh}
+            setNotice={setNotice}
+          />
+        ))}
+      </div>
+
+      <form className="add-work-type-inline-form" onSubmit={add}>
+        <input
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          placeholder={t("workTypeExample")}
+          required
+        />
+        <button className="add-type-btn">
+          <PlusLg size={18} />
+          <span>{t("add")}</span>
+        </button>
+      </form>
+    </div>
+  );
+}
+
+function WorkTypeRateRow({
+  workType,
+  language,
+  onToggle,
+  onRefresh,
+  setNotice,
+}: {
+  workType: WorkType;
+  language: "te" | "en";
+  onToggle: () => void;
+  onRefresh: () => Promise<void>;
+  setNotice: (notice: Notice) => void;
+}) {
+  const { t } = useLanguage();
+  const [acreRate, setAcreRate] = useState(workType.acre_rate == null ? "" : String(workType.acre_rate));
+  const [hourRate, setHourRate] = useState(workType.hour_rate == null ? "" : String(workType.hour_rate));
+  const [isEditing, setIsEditing] = useState(false);
+  const [busy, setBusy] = useState(false);
+
+  const saveRates = async (event: FormEvent) => {
+    event.preventDefault();
+    setBusy(true);
+    const { error } = await getSupabase()
+      .from("work_types")
+      .update({
+        acre_rate: acreRate === "" ? null : Number(acreRate),
+        hour_rate: hourRate === "" ? null : Number(hourRate),
+      })
+      .eq("id", workType.id);
+    setBusy(false);
+    if (error) {
+      setNotice({ tone: "error", text: friendlyError(error.message, t) });
+    } else {
+      setNotice({ tone: "success", text: t("ratesSaved") });
+      setIsEditing(false);
+      await onRefresh();
+    }
+  };
+
+  return (
+    <article className="work-type-rate-card">
+      <div className="type-row-top">
+        <div className="type-icon-name-wrap">
+          <div className="type-avatar">
+            <WorkTypeIcon name={workType.name} size={24} />
+          </div>
+          <div>
+            <strong>{displayWorkType(workType.name, language)}</strong>
+            <small>
+              {workType.acre_rate ? `₹${workType.acre_rate} / ${t("perAcre")}` : ""}
+              {workType.acre_rate && workType.hour_rate ? " · " : ""}
+              {workType.hour_rate ? `₹${workType.hour_rate} / ${t("perHour")}` : ""}
+            </small>
+          </div>
+        </div>
+        <div className="type-actions-wrap">
+          <button
+            type="button"
+            className="edit-pencil-btn"
+            onClick={() => setIsEditing((prev) => !prev)}
+            title={t("editWork")}
+          >
+            <PencilSquare size={18} />
+          </button>
+          <label className="switch" title={workType.active ? t("availableInForm") : t("hiddenFromForm")}>
+            <input type="checkbox" checked={workType.active} onChange={onToggle} />
+            <span />
+          </label>
+        </div>
+      </div>
+
+      {isEditing && (
+        <form onSubmit={saveRates} className="rate-edit-inline-grid">
+          <label>
+            <FieldLabel label={t("acreRate")} />
+            <div className="currency-input-wrap">
+              <span>₹</span>
+              <input
+                type="number"
+                min="0"
+                step="1"
+                value={acreRate}
+                onChange={(e) => setAcreRate(e.target.value)}
+                placeholder="2000"
+              />
+            </div>
+          </label>
+          <label>
+            <FieldLabel label={t("hourRate")} />
+            <div className="currency-input-wrap">
+              <span>₹</span>
+              <input
+                type="number"
+                min="0"
+                step="1"
+                value={hourRate}
+                onChange={(e) => setHourRate(e.target.value)}
+                placeholder="1000"
+              />
+            </div>
+          </label>
+          <button type="submit" className="save-rates-btn" disabled={busy}>
+            {busy ? t("saving") : t("save")}
+          </button>
+        </form>
+      )}
+    </article>
+  );
+}
+
+// -------------------------------------------------------------
+// SETTINGS / PROFILE (Matching Reference Screen 12)
+// -------------------------------------------------------------
+function SettingsView({
+  session,
+  workTypes,
+  onRefresh,
+  setNotice,
+  onSignOut,
+  onOpenWorkTypes,
+}: {
+  session: Session | null;
+  workTypes: WorkType[];
+  onRefresh: () => Promise<void>;
+  setNotice: (notice: Notice) => void;
+  onSignOut: () => void;
+  onOpenWorkTypes: () => void;
+}) {
+  const { language, setLanguage, t } = useLanguage();
+  const [showChangePassword, setShowChangePassword] = useState(false);
+
+  return (
+    <div className="settings-page-content">
+      {/* User Account Profile Card */}
+      <section className="profile-summary-card">
+        <div className="avatar-circle large">
+          <PersonFill size={36} color="#ffffff" />
+        </div>
+        <div className="profile-info-text">
+          <strong>{session?.user?.email?.split("@")[0] ?? "Owner"}</strong>
+          <small>{session?.user?.email ?? ""}</small>
+        </div>
+      </section>
+
+      {/* Settings Navigation Menu */}
+      <section className="settings-menu-list">
+        {/* Language switch */}
+        <button
+          type="button"
+          className="settings-menu-item"
+          onClick={() => setLanguage(language === "te" ? "en" : "te")}
+        >
+          <div className="menu-icon-wrap">
+            <Translate size={20} />
+          </div>
+          <div className="menu-text">
+            <span>{t("language")}</span>
+            <small>{language === "te" ? "తెలుగు" : "English"}</small>
+          </div>
+          <ChevronRight size={18} />
+        </button>
+
+        {/* Work Types & Rates */}
+        <button
+          type="button"
+          className="settings-menu-item"
+          onClick={onOpenWorkTypes}
+        >
+          <div className="menu-icon-wrap">
+            <Sliders size={20} />
+          </div>
+          <div className="menu-text">
+            <span>{t("workTypesAndRates")}</span>
+            <small>{workTypes.length} {t("workTypes")}</small>
+          </div>
+          <ChevronRight size={18} />
+        </button>
+
+        {/* Change password */}
+        <button
+          type="button"
+          className="settings-menu-item"
+          onClick={() => setShowChangePassword((prev) => !prev)}
+        >
+          <div className="menu-icon-wrap">
+            <KeyFill size={20} />
+          </div>
+          <div className="menu-text">
+            <span>{t("changePasswordOption")}</span>
+          </div>
+          <ChevronRight size={18} />
+        </button>
+
+        {/* Logout (Red) */}
+        <button
+          type="button"
+          className="settings-menu-item logout-item"
+          onClick={onSignOut}
+        >
+          <div className="menu-icon-wrap red">
+            <BoxArrowRight size={20} />
+          </div>
+          <div className="menu-text">
+            <span>{t("signOut")}</span>
+          </div>
+        </button>
+      </section>
+
+      {/* Embedded Password Change Form */}
+      {showChangePassword && (
+        <section className="embedded-password-panel">
+          <ChangePasswordPanel />
+        </section>
+      )}
+    </div>
+  );
+}
+
+function ChangePasswordPanel() {
+  const { t } = useLanguage();
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmation, setConfirmation] = useState("");
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [needsCurrentPassword, setNeedsCurrentPassword] = useState(false);
+  const [error, setError] = useState("");
+  const [status, setStatus] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  const submit = async (event: FormEvent) => {
+    event.preventDefault();
+    setError("");
+    setStatus("");
+    if (!newPassword) return setError(t("passwordRequired"));
+    if (newPassword !== confirmation) return setError(t("passwordsDoNotMatch"));
+    if (needsCurrentPassword && !currentPassword) return setError(t("currentPasswordRequired"));
+
+    setBusy(true);
+    const attributes: { password: string; current_password?: string } = { password: newPassword };
+    if (needsCurrentPassword) attributes.current_password = currentPassword;
+    const { error: updateError } = await getSupabase().auth.updateUser(attributes);
+    setBusy(false);
+
+    if (updateError) {
+      const lower = updateError.message.toLowerCase();
+      if (lower.includes("current password")) {
+        setNeedsCurrentPassword(true);
+        setError(t("reauthCurrentRequired"));
+      } else {
+        setError(friendlyError(updateError.message, t));
+      }
+      return;
+    }
+
+    setNewPassword("");
+    setConfirmation("");
+    setCurrentPassword("");
+    setNeedsCurrentPassword(false);
+    setStatus(t("passwordChanged"));
+  };
+
+  return (
+    <form className="password-form-card" onSubmit={submit}>
+      <h3>{t("changePassword")}</h3>
+      {needsCurrentPassword && (
+        <label className="input-group">
+          <FieldLabel label={t("currentPassword")} />
+          <input
+            type="password"
+            value={currentPassword}
+            onChange={(e) => setCurrentPassword(e.target.value)}
+            required
+          />
+        </label>
+      )}
+      <label className="input-group">
+        <FieldLabel label={t("newPassword")} />
+        <input
+          type="password"
+          value={newPassword}
+          onChange={(e) => setNewPassword(e.target.value)}
+          required
+        />
+      </label>
+      <label className="input-group">
+        <FieldLabel label={t("confirmPassword")} />
+        <input
+          type="password"
+          value={confirmation}
+          onChange={(e) => setConfirmation(e.target.value)}
+          required
+        />
+      </label>
+      {error && <p className="form-error" role="alert">{error}</p>}
+      {status && <p className="form-success" role="status">{status}</p>}
+      <button className="save-work-submit-btn" disabled={busy}>
+        {busy ? t("updatingPassword") : t("updatePassword")}
+      </button>
+    </form>
+  );
+}
+
+// -------------------------------------------------------------
+// SHARE SHEET (Single Work Receipt)
+// -------------------------------------------------------------
 function ShareSheet({ work, onClose }: { work: WorkRecord; onClose: () => void }) {
   const { language, t } = useLanguage();
   const customer = work.customer;
   const balance = balanceFor(work);
-  const date = new Date(`${work.work_date}T00:00:00`).toLocaleDateString(language === "te" ? "te-IN-u-nu-latn" : "en-IN", { day: "numeric", month: "short", year: "numeric" });
+  const date = new Date(`${work.work_date}T00:00:00`).toLocaleDateString(
+    language === "te" ? "te-IN-u-nu-latn" : "en-IN",
+    { day: "numeric", month: "short", year: "numeric" }
+  );
   const unit = work.charge_basis === "hour" ? t("hoursWorked") : t("acres");
   const receipt = `${t("receiptTitle")}\n\n${t("receiptFarmer")}: ${customer?.name ?? "-"}\n${t("receiptDate")}: ${date}\n${t("receiptWork")}: ${displayWorkType(work.work_type_name, language)}\n${t("sharedWorkDetails")}: ${work.quantity} ${unit} × ${money(work.rate)}\n${t("receiptTotal")}: ${money(work.total)}\n\n${paymentStatus(balance)}\n\n${t("thankYou")}`;
   const phone = customer?.phone?.replace(/[^\d+]/g, "") ?? "";
+
   return (
-    <div className="modal-backdrop">
+    <div className="modal-backdrop" role="presentation">
       <section className="modal share-modal" role="dialog" aria-modal="true">
-        <div className="modal-head"><div><p className="eyebrow">{t("savedSuccessfully")}</p><h2>{t("shareReceiptTitle")}</h2></div><IconButton icon={X} label={t("close")} onClick={onClose} /></div>
+        <div className="modal-head">
+          <div>
+            <p className="eyebrow">{t("shareReceiptTitle")}</p>
+            <h2>{customer?.name}</h2>
+          </div>
+          <IconButton icon={X} label={t("close")} onClick={onClose} />
+        </div>
         <pre className="receipt">{receipt}</pre>
-        <div className="share-actions"><a className="whatsapp-button" href={`https://wa.me/${phone}?text=${encodeURIComponent(receipt)}`} target="_blank" rel="noreferrer"><MessageCircle size={22} /> {t("sendWhatsApp")}</a><a className="sms-button" href={`sms:${phone}?&body=${encodeURIComponent(receipt)}`}><Phone size={22} /> {t("sendSms")}</a></div>
+        <div className="share-actions">
+          <a
+            className="whatsapp-button"
+            href={`https://wa.me/${phone}?text=${encodeURIComponent(receipt)}`}
+            target="_blank"
+            rel="noreferrer"
+          >
+            <Whatsapp size={20} /> {t("sendWhatsApp")}
+          </a>
+          <a
+            className="sms-button"
+            href={`sms:${phone}?&body=${encodeURIComponent(receipt)}`}
+          >
+            <TelephoneFill size={18} /> {t("sendSms")}
+          </a>
+        </div>
         <button className="text-button" onClick={onClose}>{t("done")}</button>
       </section>
     </div>
   );
 }
 
-function CustomerShareSheet({ customer, works, onClose }: { customer: Customer; works: WorkRecord[]; onClose: () => void }) {
+// -------------------------------------------------------------
+// CUSTOMER FULL STATEMENT SHARE SHEET
+// -------------------------------------------------------------
+function CustomerShareSheet({
+  customer,
+  works,
+  onClose,
+}: {
+  customer: Customer;
+  works: WorkRecord[];
+  onClose: () => void;
+}) {
   const { language, t } = useLanguage();
-  const dateLabel = (value: string) => new Date(`${value}T00:00:00`).toLocaleDateString(language === "te" ? "te-IN-u-nu-latn" : "en-IN", { day: "numeric", month: "short", year: "numeric" });
-  const pendingWorks = works.map((work) => ({ work, balance: balanceFor(work) })).filter(({ balance }) => balance > 0);
+  const dateLabel = (value: string) =>
+    new Date(`${value}T00:00:00`).toLocaleDateString(
+      language === "te" ? "te-IN-u-nu-latn" : "en-IN",
+      { day: "numeric", month: "short", year: "numeric" }
+    );
+  const pendingWorks = works
+    .map((work) => ({ work, balance: balanceFor(work) }))
+    .filter(({ balance }) => balance > 0);
   const totalPending = pendingWorks.reduce((sum, { balance }) => sum + balance, 0);
-  const labelLine = (label: string, value: string, bold: boolean) => bold ? `*${label}:* ${value}` : `${label}: ${value}`;
+
+  const labelLine = (label: string, value: string, bold: boolean) =>
+    bold ? `*${label}:* ${value}` : `${label}: ${value}`;
+
   const buildStatement = (bold: boolean) => {
     const title = bold ? `*${t("customerStatementTitle")}*` : t("customerStatementTitle");
-    const details = pendingWorks.map(({ work, balance }, index) => {
-      const unit = work.charge_basis === "hour" ? t("hoursWorked") : t("acres");
-      return `${index + 1}.\n${labelLine(t("receiptWork"), displayWorkType(work.work_type_name, language), bold)}\n${labelLine(t("receiptDate"), dateLabel(work.work_date), bold)}\n${labelLine(t("sharedQuantity"), `${work.quantity} ${unit}`, bold)}\n${labelLine(t("receiptRate"), money(work.rate), bold)}\n${labelLine(t("remainingBalance"), money(balance), bold)}`;
-    }).join("\n\n");
+    const details = pendingWorks
+      .map(({ work, balance }, index) => {
+        const unit = work.charge_basis === "hour" ? t("hoursWorked") : t("acres");
+        return `${index + 1}.\n${labelLine(t("receiptWork"), displayWorkType(work.work_type_name, language), bold)}\n${labelLine(t("receiptDate"), dateLabel(work.work_date), bold)}\n${labelLine(t("sharedQuantity"), `${work.quantity} ${unit}`, bold)}\n${labelLine(t("receiptRate"), money(work.rate), bold)}\n${labelLine(t("remainingBalance"), money(balance), bold)}`;
+      })
+      .join("\n\n");
+
     const pendingSection = pendingWorks.length
       ? `${bold ? `*${t("sharedWorkDetails")}*` : t("sharedWorkDetails")}\n\n${details}\n\n${labelLine(t("totalPendingBalance"), money(totalPending), bold)}\n\nPhonePe / Google Pay ద్వారా\n${bold ? "*9704200894*" : "9704200894"} నంబర్‌కు చెల్లించండి.\nచెల్లించే ముందు పేరు సరిచూసుకోండి.`
       : bold ? `*${t("noPendingBalance")}*` : t("noPendingBalance");
+
     return `${title}\n\n${labelLine(t("receiptFarmer"), customer.name, bold)}\n\n${pendingSection}\n\n${t("thankYou")}`;
   };
+
   const whatsappStatement = buildStatement(true);
   const smsStatement = buildStatement(false);
   const phone = customer.phone?.replace(/[^\d+]/g, "") ?? "";
 
   return (
-    <div className="modal-backdrop top-layer">
+    <div className="modal-backdrop top-layer" role="presentation">
       <section className="modal share-modal" role="dialog" aria-modal="true" aria-labelledby="customer-share-title">
-        <div className="modal-head"><div><p className="eyebrow">{customer.name}</p><h2 id="customer-share-title">{t("shareAllDetails")}</h2></div><IconButton icon={X} label={t("close")} onClick={onClose} /></div>
+        <div className="modal-head">
+          <div>
+            <p className="eyebrow">{customer.name}</p>
+            <h2 id="customer-share-title">{t("shareAllDetails")}</h2>
+          </div>
+          <IconButton icon={X} label={t("close")} onClick={onClose} />
+        </div>
         <div className="receipt statement-preview">
           <h3>{t("customerStatementTitle")}</h3>
           <p><strong>{t("receiptFarmer")}:</strong> {customer.name}</p>
-          {pendingWorks.length ? <>
-            <h4>{t("sharedWorkDetails")}</h4>
-            {pendingWorks.map(({ work, balance }, index) => {
-              const unit = work.charge_basis === "hour" ? t("hoursWorked") : t("acres");
-              return <section className="statement-work" key={work.id}><b>{index + 1}.</b><p><strong>{t("receiptWork")}:</strong> {displayWorkType(work.work_type_name, language)}</p><p><strong>{t("receiptDate")}:</strong> {dateLabel(work.work_date)}</p><p><strong>{t("sharedQuantity")}:</strong> {work.quantity} {unit}</p><p><strong>{t("receiptRate")}:</strong> {money(work.rate)}</p><p className="statement-balance"><strong>{t("remainingBalance")}:</strong> {money(balance)}</p></section>;
-            })}
-            <p className="statement-total"><strong>{t("totalPendingBalance")}:</strong> {money(totalPending)}</p>
-            <div className="statement-payment"><p>PhonePe / Google Pay ద్వారా</p><p><strong>9704200894</strong> నంబర్‌కు చెల్లించండి.</p><p>చెల్లించే ముందు పేరు సరిచూసుకోండి.</p></div>
-          </> : <p className="statement-clear"><strong>{t("noPendingBalance")}</strong></p>}
+          {pendingWorks.length ? (
+            <>
+              <h4>{t("sharedWorkDetails")}</h4>
+              {pendingWorks.map(({ work, balance }, index) => {
+                const unit = work.charge_basis === "hour" ? t("hoursWorked") : t("acres");
+                return (
+                  <section className="statement-work" key={work.id}>
+                    <b>{index + 1}.</b>
+                    <p><strong>{t("receiptWork")}:</strong> {displayWorkType(work.work_type_name, language)}</p>
+                    <p><strong>{t("receiptDate")}:</strong> {dateLabel(work.work_date)}</p>
+                    <p><strong>{t("sharedQuantity")}:</strong> {work.quantity} {unit}</p>
+                    <p><strong>{t("receiptRate")}:</strong> {money(work.rate)}</p>
+                    <p className="statement-balance"><strong>{t("remainingBalance")}:</strong> {money(balance)}</p>
+                  </section>
+                );
+              })}
+              <p className="statement-total"><strong>{t("totalPendingBalance")}:</strong> {money(totalPending)}</p>
+              <div className="statement-payment">
+                <p>PhonePe / Google Pay ద్వారా</p>
+                <p><strong>9704200894</strong> నంబర్‌కు చెల్లించండి.</p>
+                <p>చెల్లించే ముందు పేరు సరిచూసుకోండి.</p>
+              </div>
+            </>
+          ) : (
+            <p className="statement-clear"><strong>{t("noPendingBalance")}</strong></p>
+          )}
           <p className="statement-thanks">{t("thankYou")}</p>
         </div>
-        <div className="share-actions"><a className="whatsapp-button" href={`https://wa.me/${phone}?text=${encodeURIComponent(whatsappStatement)}`} target="_blank" rel="noreferrer"><MessageCircle size={22} /> {t("sendWhatsApp")}</a><a className="sms-button" href={`sms:${phone}?&body=${encodeURIComponent(smsStatement)}`}><Phone size={22} /> {t("sendSms")}</a></div>
+        <div className="share-actions">
+          <a
+            className="whatsapp-button"
+            href={`https://wa.me/${phone}?text=${encodeURIComponent(whatsappStatement)}`}
+            target="_blank"
+            rel="noreferrer"
+          >
+            <Whatsapp size={20} /> {t("sendWhatsApp")}
+          </a>
+          <a
+            className="sms-button"
+            href={`sms:${phone}?&body=${encodeURIComponent(smsStatement)}`}
+          >
+            <TelephoneFill size={18} /> {t("sendSms")}
+          </a>
+        </div>
         <button className="text-button" onClick={onClose}>{t("done")}</button>
       </section>
     </div>
