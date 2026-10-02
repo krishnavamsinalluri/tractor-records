@@ -21,7 +21,6 @@ import {
   PencilSquare,
   CheckCircleFill,
   CashCoin,
-  CashStack,
   Wallet2,
   BoxArrowRight,
   KeyFill,
@@ -51,6 +50,7 @@ import { getPasswordRecoveryRedirectUrl, getSupabase, hasSupabaseConfig } from "
 import type { ChargeBasis, Customer, Payment, WorkRecord, WorkType } from "@/lib/types";
 
 type Notice = { tone: "success" | "error"; text: string } | null;
+type UnsavedNavigation = { href?: string; onDiscard?: () => void };
 type ContactPickerContact = { name?: string[]; tel?: string[] };
 declare global {
   interface Navigator {
@@ -103,14 +103,13 @@ function recoveryLinkFailure(error: string | null, errorCode: string | null, des
 function useUnsavedChangesGuard(isDirty: boolean) {
   useEffect(() => {
     if (!isDirty) return;
-    const dialogUrl = window.location.href;
     const warnBeforeUnload = (event: BeforeUnloadEvent) => {
       event.preventDefault();
       event.returnValue = "";
     };
     const confirmBrowserBack = () => {
       if (!window.confirm(UNSAVED_CHANGES_MESSAGE)) {
-        window.history.pushState(null, "", dialogUrl);
+        window.history.forward();
       }
     };
     const confirmLinkNavigation = (event: MouseEvent) => {
@@ -119,10 +118,11 @@ function useUnsavedChangesGuard(isDirty: boolean) {
       if (!target || target.getAttribute("target") === "_blank" || target.hasAttribute("download")) return;
       const destination = new URL(target.getAttribute("href") ?? "", window.location.href);
       if (destination.href === window.location.href) return;
-      if (!window.confirm(UNSAVED_CHANGES_MESSAGE)) {
-        event.preventDefault();
-        event.stopPropagation();
-      }
+      event.preventDefault();
+      event.stopPropagation();
+      window.dispatchEvent(new CustomEvent<UnsavedNavigation>("tractor-unsaved-navigation", {
+        detail: { href: `${destination.pathname}${destination.search}${destination.hash}` },
+      }));
     };
     window.addEventListener("beforeunload", warnBeforeUnload);
     window.addEventListener("popstate", confirmBrowserBack);
@@ -135,7 +135,8 @@ function useUnsavedChangesGuard(isDirty: boolean) {
   }, [isDirty]);
 
   return useCallback((close: () => void) => {
-    if (!isDirty || window.confirm(UNSAVED_CHANGES_MESSAGE)) close();
+    if (!isDirty) close();
+    else window.dispatchEvent(new CustomEvent<UnsavedNavigation>("tractor-unsaved-navigation", { detail: { onDiscard: close } }));
   }, [isDirty]);
 }
 
@@ -194,6 +195,30 @@ function LanguageToggle({ compact = false }: { compact?: boolean }) {
   );
 }
 
+function WorkflowPage({ children }: { children: React.ReactNode }) {
+  return <div className="workflow-page">{children}</div>;
+}
+
+function workflowTitle(dialog: string, t: (key: MessageKey) => string) {
+  const titles: Record<string, MessageKey> = {
+    "add-work": "addWork",
+    "edit-work": "editWork",
+    "work-saved": "workSavedTitle",
+    "share-work": "shareReceiptTitle",
+    "add-payment": "addPayment",
+    "customer-payment": "addPayment",
+    "share-all": "shareAllDetails",
+    "add-customer": "addNewCustomer",
+    "edit-customer": "editCustomer",
+    "work-types": "workTypesAndRates",
+    "add-work-type": "addWorkType",
+    "edit-work-type": "editWorkType",
+    profile: "settings",
+    "profile-password": "changePassword",
+  };
+  return t(titles[dialog] ?? "settings");
+}
+
 function EmptyState({ title, text }: {
   title: string;
   text: string;
@@ -225,7 +250,6 @@ function TractorAppContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [session, setSession] = useState<Session | null>(null);
-  const [mounted, setMounted] = useState(false);
   const [authLoading, setAuthLoading] = useState(true);
   const [passwordRecovery, setPasswordRecovery] = useState(false);
   const [customers, setCustomers] = useState<Customer[]>([]);
@@ -234,16 +258,17 @@ function TractorAppContent() {
   const [loading, setLoading] = useState(false);
   const [notice, setNotice] = useState<Notice>(null);
   const [customerQuery, setCustomerQuery] = useState("");
+  const [customerFilters, setCustomerFilters] = useState<Record<string, "all" | "pending" | "paid">>({});
+  const [unsavedNavigation, setUnsavedNavigation] = useState<UnsavedNavigation | null>(null);
   const [savedWorkForShare, setSavedWorkForShare] = useState<WorkRecord | null>(null);
   const customerListScroll = useRef(0);
   const detailOpenedFromList = useRef(false);
-  const dialogOpenedInApp = useRef(false);
   const previousPath = useRef(pathname);
 
-  const customerMatch = pathname.match(/^\/customers\/([^/]+)$/);
-  const customerId = customerMatch ? decodeURIComponent(customerMatch[1]) : null;
+  const customerMatch = pathname.match(/^\/customers\/([^/]+)/);
+  const customerId = customerMatch && customerMatch[1] !== "new" ? decodeURIComponent(customerMatch[1]) : null;
   const selectedCustomer = customerId ? customers.find((customer) => customer.id === customerId) : undefined;
-  const isCustomerDetail = customerId !== null;
+  const isCustomerDetail = Boolean(customerId && pathname === `/customers/${encodeURIComponent(customerId)}`);
 
   // Determine active view
   const view = isCustomerDetail || pathname === "/customers"
@@ -254,8 +279,30 @@ function TractorAppContent() {
         ? "settings"
         : "dashboard";
 
-  const dialog = searchParams.get("dialog");
-  const dialogWorkId = searchParams.get("workId");
+  const workRoute = pathname.match(/^\/work\/([^/]+)(?:\/(edit|share))?$/);
+  const savedWorkRoute = pathname.match(/^\/work\/saved\/([^/]+)$/);
+  const paymentRoute = pathname.match(/^\/payments\/work\/([^/]+)$/);
+  const customerPaymentRoute = pathname.match(/^\/customers\/([^/]+)\/payment$/);
+  const customerShareRoute = pathname.match(/^\/customers\/([^/]+)\/share$/);
+  const customerEditRoute = pathname.match(/^\/customers\/([^/]+)\/edit$/);
+  const workTypeEditRoute = pathname.match(/^\/work-types\/([^/]+)\/edit$/);
+  const dialog = pathname === "/work/new" ? "add-work"
+    : workRoute?.[2] === "edit" ? "edit-work"
+      : workRoute?.[2] === "share" ? "share-work"
+        : savedWorkRoute ? "work-saved"
+          : paymentRoute ? "add-payment"
+            : pathname === "/customers/new" ? "add-customer"
+              : customerPaymentRoute ? "customer-payment"
+                : customerShareRoute ? "share-all"
+                  : customerEditRoute ? "edit-customer"
+                  : pathname === "/work-types" ? "work-types"
+                    : pathname === "/work-types/new" ? "add-work-type"
+                      : workTypeEditRoute ? "edit-work-type"
+                        : pathname === "/profile" ? "profile"
+                          : pathname === "/profile/password" ? "profile-password"
+                          : null;
+  const dialogWorkId = (workRoute?.[2] ? workRoute[1] : undefined) ?? savedWorkRoute?.[1] ?? paymentRoute?.[1];
+  const workTypeId = workTypeEditRoute?.[1];
   const dialogWork = works.find((work) => work.id === dialogWorkId) ??
     (savedWorkForShare?.id === dialogWorkId ? savedWorkForShare : undefined);
 
@@ -371,8 +418,10 @@ function TractorAppContent() {
   }, [pathname]);
 
   useEffect(() => {
-    if (!dialog) dialogOpenedInApp.current = false;
-  }, [dialog]);
+    const showWarning = (event: Event) => setUnsavedNavigation((event as CustomEvent<UnsavedNavigation>).detail);
+    window.addEventListener("tractor-unsaved-navigation", showWarning);
+    return () => window.removeEventListener("tractor-unsaved-navigation", showWarning);
+  }, []);
 
   const totals = useMemo(() => works.reduce((acc, work) => {
     acc.total += Number(work.total);
@@ -380,11 +429,7 @@ function TractorAppContent() {
     return acc;
   }, { total: 0, received: 0 }), [works]);
 
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  if (!mounted || authLoading) return (
+  if (authLoading) return (
     <div className="center-screen" role="status" aria-live="polite">
       <div className="spinner" />
       <p>{t("checkingSession")}</p>
@@ -395,37 +440,41 @@ function TractorAppContent() {
   if (pathname === "/reset-password") return <ResetPassword hasRecoverySession={Boolean(session) && passwordRecovery} />;
   if (!session) return <Login />;
 
-  const dialogUrl = (name: string, workId?: string) => {
-    const params = new URLSearchParams();
-    params.set("dialog", name);
-    if (workId) params.set("workId", workId);
-    return `${pathname}?${params.toString()}`;
+  const currentLocation = `${pathname}${searchParams.size ? `?${searchParams.toString()}` : ""}`;
+  const workflowUrl = (path: string, from = currentLocation) => {
+    const params = new URLSearchParams({ from });
+    return `${path}?${params.toString()}`;
   };
-  const openDialog = (name: string, workId?: string) => {
-    dialogOpenedInApp.current = true;
-    router.push(dialogUrl(name, workId), { scroll: false });
+  const openDialog = (name: string, itemId?: string) => {
+    const paths: Record<string, string> = {
+      "add-customer": "/customers/new",
+      "work-types": "/work-types",
+      "customer-payment": customerId ? `/customers/${encodeURIComponent(customerId)}/payment` : "/customers",
+      "share-all": customerId ? `/customers/${encodeURIComponent(customerId)}/share` : "/customers",
+    };
+    const path = name === "add-work" ? "/work/new"
+      : name === "edit-work" ? `/work/${encodeURIComponent(itemId ?? "")}/edit`
+        : name === "share-work" ? `/work/${encodeURIComponent(itemId ?? "")}/share`
+          : name === "add-payment" ? `/payments/work/${encodeURIComponent(itemId ?? "")}`
+            : name === "edit-customer" ? `/customers/${encodeURIComponent(itemId ?? "")}/edit`
+              : paths[name];
+    if (path) router.push(workflowUrl(path), { scroll: false });
   };
   const openNewWork = (forCustomerId?: string) => {
-    if (forCustomerId) {
-      const params = new URLSearchParams();
-      params.set("dialog", "add-work");
-      params.set("customerId", forCustomerId);
-      router.push(`${pathname}?${params.toString()}`, { scroll: false });
-    } else {
-      openDialog("add-work");
-    }
+    const path = "/work/new";
+    const params = new URLSearchParams({ from: currentLocation });
+    if (forCustomerId) params.set("customerId", forCustomerId);
+    router.push(`${path}?${params.toString()}`, { scroll: false });
   };
   const openEditWork = (work: WorkRecord) => {
     openDialog("edit-work", work.id);
   };
   const openShareWork = (work: WorkRecord) => openDialog("share-work", work.id);
   const closeDialog = () => {
-    if (dialogOpenedInApp.current) {
-      dialogOpenedInApp.current = false;
-      router.back();
-    } else {
-      router.replace(pathname, { scroll: false });
-    }
+    const from = searchParams.get("from");
+    const safeFrom = from?.startsWith("/") && !from.startsWith("//") ? from : null;
+    const fallback = customerId ? `/customers/${encodeURIComponent(customerId)}` : "/";
+    router.replace(safeFrom ?? fallback, { scroll: false });
   };
   const openCustomer = (customer: Customer) => {
     customerListScroll.current = window.scrollY;
@@ -449,14 +498,21 @@ function TractorAppContent() {
     setSavedWorkForShare(null);
     customerListScroll.current = 0;
     detailOpenedFromList.current = false;
-    dialogOpenedInApp.current = false;
     router.replace("/");
   };
 
   return (
-    <div className={isCustomerDetail ? "app-shell" : "app-shell has-bottom-nav"}>
-      {/* Top Header */}
-      <header className="topbar">
+    <div className={isCustomerDetail || dialog ? "app-shell" : "app-shell has-bottom-nav"}>
+      <header className={`topbar${dialog ? " workflow-topbar" : ""}`}>
+        {dialog ? (
+          <>
+            <Link className="workflow-back" href={searchParams.get("from")?.startsWith("/") && !searchParams.get("from")?.startsWith("//") ? searchParams.get("from")! : customerId ? `/customers/${encodeURIComponent(customerId)}` : "/"} aria-label={t("back")}>
+              <ArrowLeft size={22} />
+            </Link>
+            <h1>{workflowTitle(dialog, t)}</h1>
+            <LanguageToggle compact />
+          </>
+        ) : <>
         <div className="brand">
           <span className="brand-mark"><TractorBrandIcon size={28} color="#ffffff" /></span>
           <div className="brand-text">
@@ -468,6 +524,7 @@ function TractorAppContent() {
           <LanguageToggle compact />
           <IconButton icon={BoxArrowRight} label={t("signOut")} onClick={() => void signOut()} />
         </div>
+        </>}
       </header>
 
       {notice && (
@@ -476,13 +533,110 @@ function TractorAppContent() {
         </button>
       )}
 
+      {unsavedNavigation && (
+        <aside className="unsaved-warning" role="alert">
+          <span>{t("unsavedChangesPrompt")}</span>
+          <div>
+            <button type="button" onClick={() => setUnsavedNavigation(null)}>{t("continueEditing")}</button>
+            <button type="button" className="discard-button" onClick={() => {
+              const pending = unsavedNavigation;
+              setUnsavedNavigation(null);
+              if (pending.onDiscard) pending.onDiscard();
+              else if (pending.href) router.push(pending.href, { scroll: false });
+            }}>{t("discardChanges")}</button>
+          </div>
+        </aside>
+      )}
+
       <main className="main-content">
+        {dialog ? (
+          <WorkflowPage>
+            {(dialog === "add-work" || (dialog === "edit-work" && dialogWork)) && (
+              <WorkModal
+                customers={customers}
+                workTypes={workTypes}
+                work={dialog === "edit-work" ? dialogWork ?? undefined : undefined}
+                initialCustomerId={searchParams.get("customerId") ?? undefined}
+                userId={session.user.id}
+                onClose={closeDialog}
+                onSaved={(saved) => {
+                  setSavedWorkForShare(saved);
+                  void loadData();
+                  router.replace(workflowUrl(`/work/saved/${encodeURIComponent(saved.id)}`, searchParams.get("from") ?? "/"), { scroll: false });
+                }}
+                setNotice={setNotice}
+                onCustomerCreated={(newCust) => setCustomers((prev) => [...prev, newCust])}
+              />
+            )}
+            {dialog === "work-saved" && dialogWork && (
+              <WorkSavedModal
+                work={dialogWork}
+                onClose={closeDialog}
+                onGoToCustomer={() => router.replace(`/customers/${encodeURIComponent(dialogWork.customer_id)}`)}
+                onShare={() => router.push(workflowUrl(`/work/${encodeURIComponent(dialogWork.id)}/share`), { scroll: false })}
+              />
+            )}
+            {dialog === "share-work" && dialogWork && <ShareSheet work={dialogWork} onClose={closeDialog} />}
+            {dialog === "add-payment" && dialogWork && (
+              <PaymentModal work={dialogWork} onClose={closeDialog} onSaved={() => { void loadData(); closeDialog(); }} setNotice={setNotice} />
+            )}
+            {dialog === "customer-payment" && selectedCustomer && (
+              <CustomerPaymentModal
+                customer={selectedCustomer}
+                works={works.filter((work) => work.customer_id === selectedCustomer.id)}
+                onClose={closeDialog}
+                onSaved={() => { void loadData(); closeDialog(); }}
+                setNotice={setNotice}
+              />
+            )}
+            {dialog === "share-all" && selectedCustomer && (
+              <CustomerShareSheet customer={selectedCustomer} works={works.filter((work) => work.customer_id === selectedCustomer.id)} onClose={closeDialog} />
+            )}
+            {dialog === "add-customer" && (
+              <NewCustomerModal
+                userId={session.user.id}
+                onClose={closeDialog}
+                onSaved={(newCustomer) => {
+                  setCustomers((prev) => [...prev, newCustomer]);
+                  router.replace(`/customers/${encodeURIComponent(newCustomer.id)}`);
+                }}
+                setNotice={setNotice}
+              />
+            )}
+            {dialog === "edit-customer" && selectedCustomer && (
+              <NewCustomerModal
+                userId={session.user.id}
+                customer={selectedCustomer}
+                onClose={closeDialog}
+                onSaved={() => { void loadData(); closeDialog(); }}
+                setNotice={setNotice}
+              />
+            )}
+            {dialog === "work-types" && (
+              <WorkTypeSettings workTypes={workTypes} onRefresh={loadData} setNotice={setNotice} onAdd={() => router.push(workflowUrl("/work-types/new"), { scroll: false })} onEdit={(type) => router.push(workflowUrl(`/work-types/${encodeURIComponent(type.id)}/edit`), { scroll: false })} />
+            )}
+            {(dialog === "add-work-type" || dialog === "edit-work-type") && (
+              <div className="workflow-panel"><WorkTypeForm workType={workTypes.find((type) => type.id === workTypeId)} onSaved={async () => { await loadData(); closeDialog(); }} setNotice={setNotice} /></div>
+            )}
+            {dialog === "profile" && (
+              <SettingsView session={session} workTypes={workTypes} onSignOut={() => void signOut()} onOpenWorkTypes={() => router.push(workflowUrl("/work-types"), { scroll: false })} onChangePassword={() => router.push(workflowUrl("/profile/password"), { scroll: false })} />
+            )}
+            {dialog === "profile-password" && <div className="workflow-panel"><ChangePasswordPanel /></div>}
+            {dialog && !["add-work", "edit-work", "work-saved", "share-work", "add-payment", "customer-payment", "share-all", "add-customer", "edit-customer", "work-types", "add-work-type", "edit-work-type", "profile", "profile-password"].includes(dialog) && (
+              <div className="center-screen" role="status"><div className="spinner" /><p>{t("loading")}</p></div>
+            )}
+            {dialogWorkId && !dialogWork && loading && <div className="loading-line" role="status">{t("loading")}</div>}
+          </WorkflowPage>
+        ) : <>
         {isCustomerDetail && selectedCustomer ? (
           <CustomerDetail
             customer={selectedCustomer}
             works={works.filter((work) => work.customer_id === selectedCustomer.id)}
+            filter={customerFilters[selectedCustomer.id] ?? "all"}
+            onFilterChange={(filter) => setCustomerFilters((current) => ({ ...current, [selectedCustomer.id]: filter }))}
             onBack={goBackFromCustomer}
             onAddWork={() => openNewWork(selectedCustomer.id)}
+            onEditCustomer={() => openDialog("edit-customer", selectedCustomer.id)}
             onEdit={openEditWork}
             onShare={openShareWork}
             onAddPayment={(work) => openDialog("add-payment", work.id)}
@@ -508,9 +662,6 @@ function TractorAppContent() {
             received={totals.received}
             loading={loading}
             onAdd={() => openNewWork()}
-            onEdit={openEditWork}
-            onShare={openShareWork}
-            onAddPayment={(work) => openDialog("add-payment", work.id)}
             onOpenCustomer={openCustomer}
             onViewAllDues={() => router.push("/pending")}
           />
@@ -528,22 +679,21 @@ function TractorAppContent() {
             customers={customers}
             works={works}
             onSelect={openCustomer}
-            onAddNewWork={() => openNewWork()}
           />
         ) : (
           <SettingsView
             session={session}
             workTypes={workTypes}
-            onRefresh={loadData}
-            setNotice={setNotice}
             onSignOut={() => void signOut()}
             onOpenWorkTypes={() => openDialog("work-types")}
+            onChangePassword={() => router.push(workflowUrl("/profile/password"), { scroll: false })}
           />
         )}
+        </>}
       </main>
 
       {/* Floating Bottom Navigation */}
-      {!isCustomerDetail && (
+      {!isCustomerDetail && !dialog && (
         <nav className="bottom-nav" aria-label={t("appSubtitle")}>
           <Link className={view === "dashboard" ? "active" : ""} href="/">
             {view === "dashboard" ? <HouseDoorFill size={22} /> : <HouseDoor size={22} />}
@@ -577,112 +727,6 @@ function TractorAppContent() {
         </nav>
       )}
 
-      {/* Add / Edit Work Modal */}
-      {(dialog === "add-work" || (dialog === "edit-work" && dialogWork)) && (
-        <WorkModal
-          customers={customers}
-          workTypes={workTypes}
-          work={dialog === "edit-work" ? dialogWork : undefined}
-          initialCustomerId={searchParams.get("customerId") ?? undefined}
-          userId={session.user.id}
-          onClose={closeDialog}
-          onSaved={(saved) => {
-            setSavedWorkForShare(saved);
-            router.replace(dialogUrl("work-saved", saved.id), { scroll: false });
-            void loadData();
-          }}
-          setNotice={setNotice}
-          onCustomerCreated={(newCust) => {
-            setCustomers((prev) => [...prev, newCust]);
-          }}
-        />
-      )}
-
-      {/* Work Saved Confirmation & Share (Screen 9) */}
-      {dialog === "work-saved" && dialogWork && (
-        <WorkSavedModal
-          work={dialogWork}
-          onClose={() => {
-            closeDialog();
-            router.replace("/");
-          }}
-          onGoToCustomer={() => {
-            closeDialog();
-            if (dialogWork.customer_id) {
-              router.push(`/customers/${encodeURIComponent(dialogWork.customer_id)}`);
-            }
-          }}
-        />
-      )}
-
-      {/* Share Sheet */}
-      {dialog === "share-work" && dialogWork && (
-        <ShareSheet work={dialogWork} onClose={closeDialog} />
-      )}
-
-      {/* Single Work Payment Modal */}
-      {dialog === "add-payment" && dialogWork && (
-        <PaymentModal
-          work={dialogWork}
-          onClose={closeDialog}
-          onSaved={() => { closeDialog(); void loadData(); }}
-          setNotice={setNotice}
-        />
-      )}
-
-      {/* Customer-wide FIFO Payment Modal */}
-      {dialog === "customer-payment" && selectedCustomer && (
-        <CustomerPaymentModal
-          customer={selectedCustomer}
-          works={works.filter((work) => work.customer_id === selectedCustomer.id)}
-          onClose={closeDialog}
-          onSaved={() => { closeDialog(); void loadData(); }}
-          setNotice={setNotice}
-        />
-      )}
-
-      {/* Customer Full Statement Share */}
-      {dialog === "share-all" && selectedCustomer && (
-        <CustomerShareSheet
-          customer={selectedCustomer}
-          works={works.filter((work) => work.customer_id === selectedCustomer.id)}
-          onClose={closeDialog}
-        />
-      )}
-
-      {/* Add Customer Modal */}
-      {dialog === "add-customer" && (
-        <NewCustomerModal
-          userId={session.user.id}
-          onClose={closeDialog}
-          onSaved={(newCustomer) => {
-            setCustomers((prev) => [...prev, newCustomer]);
-            closeDialog();
-            openCustomer(newCustomer);
-          }}
-          setNotice={setNotice}
-        />
-      )}
-
-      {/* Work Types Modal / View */}
-      {dialog === "work-types" && (
-        <div className="modal-backdrop" role="presentation">
-          <section className="modal work-modal" role="dialog" aria-modal="true" aria-labelledby="work-types-title">
-            <div className="modal-head">
-              <div>
-                <p className="eyebrow">{t("settings")}</p>
-                <h2 id="work-types-title">{t("workTypesAndRates")}</h2>
-              </div>
-              <IconButton icon={X} label={t("close")} onClick={closeDialog} />
-            </div>
-            <WorkTypeSettings
-              workTypes={workTypes}
-              onRefresh={loadData}
-              setNotice={setNotice}
-            />
-          </section>
-        </div>
-      )}
     </div>
   );
 }
@@ -907,7 +951,7 @@ function ResetPassword({ hasRecoverySession }: { hasRecoverySession: boolean }) 
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   const [success, setSuccess] = useState(false);
-  const [linkFailure, setLinkFailure] = useState<RecoveryLinkFailure | null>(() => {
+  const [linkFailure] = useState<RecoveryLinkFailure | null>(() => {
     const recovery = recoveryParameters();
     return recoveryLinkFailure(recovery.error, recovery.errorCode, recovery.errorDescription);
   });
@@ -1021,9 +1065,6 @@ function Dashboard({
   received,
   loading,
   onAdd,
-  onEdit,
-  onShare,
-  onAddPayment,
   onOpenCustomer,
   onViewAllDues,
 }: {
@@ -1033,9 +1074,6 @@ function Dashboard({
   received: number;
   loading: boolean;
   onAdd: () => void;
-  onEdit: (work: WorkRecord) => void;
-  onShare: (work: WorkRecord) => void;
-  onAddPayment: (work: WorkRecord) => void;
   onOpenCustomer: (customer: Customer) => void;
   onViewAllDues: () => void;
 }) {
@@ -1231,8 +1269,11 @@ function Customers({
 function CustomerDetail({
   customer,
   works,
+  filter,
+  onFilterChange,
   onBack,
   onAddWork,
+  onEditCustomer,
   onEdit,
   onShare,
   onAddPayment,
@@ -1241,8 +1282,11 @@ function CustomerDetail({
 }: {
   customer: Customer;
   works: WorkRecord[];
+  filter: "all" | "pending" | "paid";
+  onFilterChange: (filter: "all" | "pending" | "paid") => void;
   onBack: () => void;
   onAddWork: () => void;
+  onEditCustomer: () => void;
   onEdit: (work: WorkRecord) => void;
   onShare: (work: WorkRecord) => void;
   onAddPayment: (work: WorkRecord) => void;
@@ -1250,7 +1294,6 @@ function CustomerDetail({
   onShareAll: () => void;
 }) {
   const { language, t } = useLanguage();
-  const [filter, setFilter] = useState<"all" | "pending" | "paid">("all");
 
   const total = works.reduce((sum, work) => sum + Number(work.total), 0);
   const received = works.reduce((sum, work) => sum + paidFor(work), 0);
@@ -1289,6 +1332,9 @@ function CustomerDetail({
           <h1>{customer.name}</h1>
           <p>{customer.phone || t("noPhone")}</p>
         </div>
+        <button type="button" className="quick-icon-btn call-btn" onClick={onEditCustomer} aria-label={t("editCustomer")} title={t("editCustomer")}>
+          <PencilSquare size={18} />
+        </button>
         {hasPhone && (
           <div className="customer-quick-call-actions">
             <a
@@ -1375,21 +1421,21 @@ function CustomerDetail({
             <button
               type="button"
               className={filter === "all" ? "active" : ""}
-              onClick={() => setFilter("all")}
+              onClick={() => onFilterChange("all")}
             >
               {t("allWorks")}
             </button>
             <button
               type="button"
               className={filter === "pending" ? "active" : ""}
-              onClick={() => setFilter("pending")}
+              onClick={() => onFilterChange("pending")}
             >
               {t("paymentDue")}
             </button>
             <button
               type="button"
               className={filter === "paid" ? "active" : ""}
-              onClick={() => setFilter("paid")}
+              onClick={() => onFilterChange("paid")}
             >
               {t("paid")}
             </button>
@@ -1480,12 +1526,10 @@ function PendingDuesView({
   customers,
   works,
   onSelect,
-  onAddNewWork,
 }: {
   customers: Customer[];
   works: WorkRecord[];
   onSelect: (customer: Customer) => void;
-  onAddNewWork: () => void;
 }) {
   const { t } = useLanguage();
 
@@ -1591,7 +1635,7 @@ function WorkModal({
   );
 
   const [workDate, setWorkDate] = useState(work?.work_date ?? today());
-  const initialWorkTypeId = work?.work_type_id ?? (workTypes[0]?.id ?? "");
+  const initialWorkTypeId = work?.work_type_id ?? (workTypes.find((type) => type.active)?.id ?? "");
   const initialBasis: ChargeBasis = work?.charge_basis ?? "acre";
   const [workTypeId, setWorkTypeId] = useState(initialWorkTypeId);
   const [basis, setBasis] = useState<ChargeBasis>(initialBasis);
@@ -1601,7 +1645,7 @@ function WorkModal({
   const selectedType = workTypes.find((type) => type.id === workTypeId);
 
   const [rate, setRate] = useState(
-    work ? String(work.rate) : configuredRate(selectedType, initialBasis) || "2000"
+    work ? String(work.rate) : configuredRate(selectedType, initialBasis)
   );
   const [received, setReceived] = useState("0");
   const [busy, setBusy] = useState(false);
@@ -1630,13 +1674,13 @@ function WorkModal({
     setWorkTypeId(nextWorkTypeId);
     const targetType = workTypes.find((type) => type.id === nextWorkTypeId);
     const newRate = configuredRate(targetType, basis);
-    if (newRate) setRate(newRate);
+    setRate(newRate);
   };
 
   const selectBasis = (nextBasis: ChargeBasis) => {
     setBasis(nextBasis);
     const newRate = configuredRate(selectedType, nextBasis);
-    if (newRate) setRate(newRate);
+    setRate(newRate);
   };
 
   const adjustQuantity = (delta: number) => {
@@ -1671,6 +1715,7 @@ function WorkModal({
     if ((work || customerMode === "existing") && !customerId) return setError(t("chooseFarmer"));
     if (!work && customerMode === "new" && !farmerName.trim()) return setError(t("enterFarmerName"));
     if (!workTypeId) return setError(t("chooseWorkType"));
+    if (rate.trim() === "") return setError(t("rateNotConfigured"));
     if (qty <= 0 || unitRate < 0 || initialPayment < 0) return setError(t("invalidAmounts"));
     if (work && total < alreadyPaid) return setError(t("totalBelowPaid", { amount: money(alreadyPaid) }));
     if (!work && initialPayment > total) return setError(t("receivedTooHigh"));
@@ -1745,8 +1790,8 @@ function WorkModal({
   };
 
   return (
-    <div className="modal-backdrop" role="presentation">
-      <section className="modal work-modal" role="dialog" aria-modal="true" aria-labelledby="work-modal-title">
+    <div className="workflow-body">
+      <section className="workflow-panel work-modal" aria-labelledby="work-modal-title">
         <div className="modal-head">
           <div>
             <p className="eyebrow">{work ? t("editRecord") : t("newRecord")}</p>
@@ -1925,6 +1970,7 @@ function WorkModal({
                   required
                 />
               </div>
+              {rate === "" && <small className="field-help rate-required-help">{t("rateNotConfigured")}</small>}
             </label>
           </div>
 
@@ -1982,10 +2028,12 @@ function WorkSavedModal({
   work,
   onClose,
   onGoToCustomer,
+  onShare,
 }: {
   work: WorkRecord;
   onClose: () => void;
   onGoToCustomer: () => void;
+  onShare: () => void;
 }) {
   const { language, t } = useLanguage();
   const customer = work.customer;
@@ -1996,13 +2044,9 @@ function WorkSavedModal({
     { day: "numeric", month: "short", year: "numeric" }
   );
   const unit = work.charge_basis === "hour" ? t("hoursWorked") : t("acres");
-  const phone = customer?.phone?.replace(/[^\d+]/g, "") ?? "";
-
-  const receipt = `${t("receiptTitle")}\n\n${t("receiptFarmer")}: ${customer?.name ?? "-"}\n${t("receiptDate")}: ${date}\n${t("receiptWork")}: ${displayWorkType(work.work_type_name, language)}\n${t("sharedWorkDetails")}: ${work.quantity} ${unit} × ${money(work.rate)}\n${t("receiptTotal")}: ${money(work.total)}\n\n${paymentStatus(balance)}\n\n${t("thankYou")}`;
-
   return (
-    <div className="modal-backdrop top-layer" role="presentation">
-      <section className="modal work-saved-modal" role="dialog" aria-modal="true">
+    <div className="workflow-body">
+      <section className="workflow-panel work-saved-page">
         {/* Large Green Checkmark */}
         <div className="saved-success-badge">
           <CheckCircleFill size={64} color="#15803d" />
@@ -2017,7 +2061,7 @@ function WorkSavedModal({
             </div>
             <div>
               <strong>{customer?.name}</strong>
-              <small>{displayWorkType(work.work_type_name, language)} - {work.quantity} {unit}</small>
+              <small>{displayWorkType(work.work_type_name, language)} - {work.quantity} {unit} · {date}</small>
             </div>
           </div>
 
@@ -2045,16 +2089,18 @@ function WorkSavedModal({
         <div className="saved-actions">
           <a
             className="whatsapp-primary-share-btn"
-            href={`https://wa.me/${phone}?text=${encodeURIComponent(receipt)}`}
-            target="_blank"
-            rel="noreferrer"
+            href="#share-preview"
+            onClick={(event) => { event.preventDefault(); onShare(); }}
           >
             <Whatsapp size={22} />
-            <span>{t("shareOnWhatsApp")}</span>
+            <span>{t("shareReceiptTitle")}</span>
           </a>
 
           <button type="button" className="home-secondary-btn" onClick={onClose}>
-            {t("goToHome")}
+            {t("back")}
+          </button>
+          <button type="button" className="home-secondary-btn" onClick={onGoToCustomer}>
+            {t("customerDetails")}
           </button>
         </div>
       </section>
@@ -2118,8 +2164,8 @@ function PaymentModal({
   };
 
   return (
-    <div className="modal-backdrop top-layer" role="presentation">
-      <section className="modal payment-screen-modal" role="dialog" aria-modal="true">
+    <div className="workflow-body">
+      <section className="workflow-panel payment-page">
         <div className="modal-head">
           <div>
             <p className="eyebrow">{work.customer?.name}</p>
@@ -2277,8 +2323,8 @@ function CustomerPaymentModal({
   };
 
   return (
-    <div className="modal-backdrop top-layer" role="presentation">
-      <section className="modal payment-screen-modal" role="dialog" aria-modal="true">
+    <div className="workflow-body">
+      <section className="workflow-panel payment-page">
         <div className="modal-head">
           <div>
             <p className="eyebrow">{customer.name}</p>
@@ -2371,33 +2417,39 @@ function CustomerPaymentModal({
 // -------------------------------------------------------------
 function NewCustomerModal({
   userId,
+  customer,
   onClose,
   onSaved,
   setNotice,
 }: {
   userId: string;
+  customer?: Customer;
   onClose: () => void;
   onSaved: (customer: Customer) => void;
   setNotice: (notice: Notice) => void;
 }) {
   const { t } = useLanguage();
-  const [name, setName] = useState("");
-  const [phone, setPhone] = useState("");
+  const [name, setName] = useState(customer?.name ?? "");
+  const [phone, setPhone] = useState(customer?.phone ?? "");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const isDirty = name !== (customer?.name ?? "") || phone !== (customer?.phone ?? "");
+  const requestClose = useUnsavedChangesGuard(isDirty && !busy);
 
   const submit = async (event: FormEvent) => {
     event.preventDefault();
     if (!name.trim()) return setError(t("enterFarmerName"));
     setBusy(true);
     setError("");
-    const { data, error: insertError } = await getSupabase()
-      .from("customers")
-      .insert({
+    const values = {
         user_id: userId,
         name: name.trim(),
         phone: phone.trim() || null,
-      })
+    };
+    const request = customer
+      ? getSupabase().from("customers").update(values).eq("id", customer.id)
+      : getSupabase().from("customers").insert(values);
+    const { data, error: insertError } = await request
       .select()
       .single();
     setBusy(false);
@@ -2405,20 +2457,20 @@ function NewCustomerModal({
     if (insertError) {
       setError(friendlyError(insertError.message, t));
     } else {
-      setNotice({ tone: "success", text: t("savedSuccessfully") });
+      setNotice({ tone: "success", text: customer ? t("customerUpdated") : t("savedSuccessfully") });
       onSaved(data as Customer);
     }
   };
 
   return (
-    <div className="modal-backdrop top-layer" role="presentation">
-      <section className="modal compact-modal" role="dialog" aria-modal="true">
+    <div className="workflow-body">
+      <section className="workflow-panel farmer-form-page">
         <div className="modal-head">
           <div>
             <p className="eyebrow">{t("customers")}</p>
-            <h2>{t("addNewCustomer")}</h2>
+            <h2>{customer ? t("editCustomer") : t("addNewCustomer")}</h2>
           </div>
-          <IconButton icon={X} label={t("close")} onClick={onClose} />
+          <IconButton icon={X} label={t("close")} onClick={() => requestClose(onClose)} />
         </div>
         <form onSubmit={submit} className="stack-form">
           <label className="input-group">
@@ -2457,30 +2509,16 @@ function WorkTypeSettings({
   workTypes,
   onRefresh,
   setNotice,
+  onAdd,
+  onEdit,
 }: {
   workTypes: WorkType[];
   onRefresh: () => Promise<void>;
   setNotice: (notice: Notice) => void;
+  onAdd: () => void;
+  onEdit: (workType: WorkType) => void;
 }) {
   const { language, t } = useLanguage();
-  const [name, setName] = useState("");
-
-  const add = async (event: FormEvent) => {
-    event.preventDefault();
-    const value = name.trim();
-    if (!value) return;
-    const { data: userData } = await getSupabase().auth.getUser();
-    const { error } = await getSupabase()
-      .from("work_types")
-      .insert({ name: value, user_id: userData.user?.id });
-    if (error) {
-      setNotice({ tone: "error", text: friendlyError(error.message, t) });
-    } else {
-      setName("");
-      setNotice({ tone: "success", text: t("workTypeAdded") });
-      await onRefresh();
-    }
-  };
 
   const toggle = async (workType: WorkType) => {
     const { error } = await getSupabase()
@@ -2500,24 +2538,15 @@ function WorkTypeSettings({
             workType={type}
             language={language}
             onToggle={() => void toggle(type)}
-            onRefresh={onRefresh}
-            setNotice={setNotice}
+            onEdit={() => onEdit(type)}
           />
         ))}
       </div>
 
-      <form className="add-work-type-inline-form" onSubmit={add}>
-        <input
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          placeholder={t("workTypeExample")}
-          required
-        />
-        <button className="add-type-btn">
+      <button type="button" className="add-type-btn" onClick={onAdd}>
           <PlusLg size={18} />
-          <span>{t("add")}</span>
-        </button>
-      </form>
+          <span>{t("addWorkType")}</span>
+      </button>
     </div>
   );
 }
@@ -2526,43 +2555,17 @@ function WorkTypeRateRow({
   workType,
   language,
   onToggle,
-  onRefresh,
-  setNotice,
+  onEdit,
 }: {
   workType: WorkType;
   language: "te" | "en";
   onToggle: () => void;
-  onRefresh: () => Promise<void>;
-  setNotice: (notice: Notice) => void;
+  onEdit: () => void;
 }) {
   const { t } = useLanguage();
-  const [acreRate, setAcreRate] = useState(workType.acre_rate == null ? "" : String(workType.acre_rate));
-  const [hourRate, setHourRate] = useState(workType.hour_rate == null ? "" : String(workType.hour_rate));
-  const [isEditing, setIsEditing] = useState(false);
-  const [busy, setBusy] = useState(false);
-
-  const saveRates = async (event: FormEvent) => {
-    event.preventDefault();
-    setBusy(true);
-    const { error } = await getSupabase()
-      .from("work_types")
-      .update({
-        acre_rate: acreRate === "" ? null : Number(acreRate),
-        hour_rate: hourRate === "" ? null : Number(hourRate),
-      })
-      .eq("id", workType.id);
-    setBusy(false);
-    if (error) {
-      setNotice({ tone: "error", text: friendlyError(error.message, t) });
-    } else {
-      setNotice({ tone: "success", text: t("ratesSaved") });
-      setIsEditing(false);
-      await onRefresh();
-    }
-  };
 
   return (
-    <article className="work-type-rate-card">
+    <article className="work-type-rate-row">
       <div className="type-row-top">
         <div className="type-icon-name-wrap">
           <div className="type-avatar">
@@ -2570,19 +2573,16 @@ function WorkTypeRateRow({
           </div>
           <div>
             <strong>{displayWorkType(workType.name, language)}</strong>
-            <small>
-              {workType.acre_rate ? `₹${workType.acre_rate} / ${t("perAcre")}` : ""}
-              {workType.acre_rate && workType.hour_rate ? " · " : ""}
-              {workType.hour_rate ? `₹${workType.hour_rate} / ${t("perHour")}` : ""}
-            </small>
+            <small>{workType.acre_rate == null ? t("configuredRateMissing") : `₹${money(workType.acre_rate)} / ${t("perAcre")}`} · {workType.hour_rate == null ? t("configuredRateMissing") : `₹${money(workType.hour_rate)} / ${t("perHour")}`}</small>
           </div>
         </div>
         <div className="type-actions-wrap">
           <button
             type="button"
             className="edit-pencil-btn"
-            onClick={() => setIsEditing((prev) => !prev)}
-            title={t("editWork")}
+            onClick={onEdit}
+            title={t("editWorkType")}
+            aria-label={t("editWorkType")}
           >
             <PencilSquare size={18} />
           </button>
@@ -2592,43 +2592,77 @@ function WorkTypeRateRow({
           </label>
         </div>
       </div>
-
-      {isEditing && (
-        <form onSubmit={saveRates} className="rate-edit-inline-grid">
-          <label>
-            <FieldLabel label={t("acreRate")} />
-            <div className="currency-input-wrap">
-              <span>₹</span>
-              <input
-                type="number"
-                min="0"
-                step="1"
-                value={acreRate}
-                onChange={(e) => setAcreRate(e.target.value)}
-                placeholder="2000"
-              />
-            </div>
-          </label>
-          <label>
-            <FieldLabel label={t("hourRate")} />
-            <div className="currency-input-wrap">
-              <span>₹</span>
-              <input
-                type="number"
-                min="0"
-                step="1"
-                value={hourRate}
-                onChange={(e) => setHourRate(e.target.value)}
-                placeholder="1000"
-              />
-            </div>
-          </label>
-          <button type="submit" className="save-rates-btn" disabled={busy}>
-            {busy ? t("saving") : t("save")}
-          </button>
-        </form>
-      )}
     </article>
+  );
+}
+
+function WorkTypeForm({
+  workType,
+  onSaved,
+  setNotice,
+}: {
+  workType?: WorkType;
+  onSaved: () => Promise<void>;
+  setNotice: (notice: Notice) => void;
+}) {
+  const { t } = useLanguage();
+  const [name, setName] = useState(workType?.name ?? "");
+  const [acreRate, setAcreRate] = useState(workType?.acre_rate == null ? "" : String(workType.acre_rate));
+  const [hourRate, setHourRate] = useState(workType?.hour_rate == null ? "" : String(workType.hour_rate));
+  const [active, setActive] = useState(workType?.active ?? true);
+  const [error, setError] = useState("");
+  const [busy, setBusy] = useState(false);
+  const isDirty = name !== (workType?.name ?? "") || acreRate !== (workType?.acre_rate == null ? "" : String(workType.acre_rate)) || hourRate !== (workType?.hour_rate == null ? "" : String(workType.hour_rate)) || active !== (workType?.active ?? true);
+  useUnsavedChangesGuard(isDirty && !busy);
+
+  const submit = async (event: FormEvent) => {
+    event.preventDefault();
+    setError("");
+    const parsedAcreRate = acreRate === "" ? null : Number(acreRate);
+    const parsedHourRate = hourRate === "" ? null : Number(hourRate);
+    if (!name.trim()) return setError(t("enterWorkTypeName"));
+    if ([parsedAcreRate, parsedHourRate].some((rate) => rate != null && (!Number.isFinite(rate) || rate < 0))) {
+      return setError(t("invalidRate"));
+    }
+
+    setBusy(true);
+    const supabase = getSupabase();
+    const values = { name: name.trim(), acre_rate: parsedAcreRate, hour_rate: parsedHourRate, active };
+    const result = workType
+      ? await supabase.from("work_types").update(values).eq("id", workType.id)
+      : await supabase.from("work_types").insert({ ...values, user_id: (await supabase.auth.getUser()).data.user?.id });
+    setBusy(false);
+    if (result.error) {
+      setError(friendlyError(result.error.message, t));
+      return;
+    }
+    setNotice({ tone: "success", text: workType ? t("workTypeUpdated") : t("workTypeAdded") });
+    await onSaved();
+  };
+
+  return (
+    <form className="workflow-form" onSubmit={submit}>
+      <label className="input-group">
+        <FieldLabel label={t("workTypeName")} />
+        <input value={name} onChange={(event) => setName(event.target.value)} required autoFocus />
+      </label>
+      <div className="workflow-rate-fields">
+        <label className="input-group">
+          <FieldLabel label={t("acreRate")} />
+          <div className="currency-input-wrap"><span>₹</span><input type="number" min="0" step="0.01" inputMode="decimal" value={acreRate} onChange={(event) => setAcreRate(event.target.value)} placeholder={t("configuredRateMissing")} /></div>
+        </label>
+        <label className="input-group">
+          <FieldLabel label={t("hourRate")} />
+          <div className="currency-input-wrap"><span>₹</span><input type="number" min="0" step="0.01" inputMode="decimal" value={hourRate} onChange={(event) => setHourRate(event.target.value)} placeholder={t("configuredRateMissing")} /></div>
+        </label>
+      </div>
+      <label className="workflow-active-toggle">
+        <span>{t("availableInForm")}</span>
+        <input type="checkbox" checked={active} onChange={(event) => setActive(event.target.checked)} />
+      </label>
+      {error && <p className="form-error" role="alert">{error}</p>}
+      <button type="submit" className="save-work-submit-btn" disabled={busy}>{busy ? t("saving") : t("save")}</button>
+    </form>
   );
 }
 
@@ -2638,20 +2672,17 @@ function WorkTypeRateRow({
 function SettingsView({
   session,
   workTypes,
-  onRefresh,
-  setNotice,
   onSignOut,
   onOpenWorkTypes,
+  onChangePassword,
 }: {
   session: Session | null;
   workTypes: WorkType[];
-  onRefresh: () => Promise<void>;
-  setNotice: (notice: Notice) => void;
   onSignOut: () => void;
   onOpenWorkTypes: () => void;
+  onChangePassword: () => void;
 }) {
   const { language, setLanguage, t } = useLanguage();
-  const [showChangePassword, setShowChangePassword] = useState(false);
 
   return (
     <div className="settings-page-content">
@@ -2704,7 +2735,7 @@ function SettingsView({
         <button
           type="button"
           className="settings-menu-item"
-          onClick={() => setShowChangePassword((prev) => !prev)}
+          onClick={onChangePassword}
         >
           <div className="menu-icon-wrap">
             <KeyFill size={20} />
@@ -2730,12 +2761,6 @@ function SettingsView({
         </button>
       </section>
 
-      {/* Embedded Password Change Form */}
-      {showChangePassword && (
-        <section className="embedded-password-panel">
-          <ChangePasswordPanel />
-        </section>
-      )}
     </div>
   );
 }
@@ -2749,6 +2774,8 @@ function ChangePasswordPanel() {
   const [error, setError] = useState("");
   const [status, setStatus] = useState("");
   const [busy, setBusy] = useState(false);
+  const isDirty = newPassword !== "" || confirmation !== "" || currentPassword !== "";
+  useUnsavedChangesGuard(isDirty && !busy);
 
   const submit = async (event: FormEvent) => {
     event.preventDefault();
@@ -2835,12 +2862,12 @@ function ShareSheet({ work, onClose }: { work: WorkRecord; onClose: () => void }
     { day: "numeric", month: "short", year: "numeric" }
   );
   const unit = work.charge_basis === "hour" ? t("hoursWorked") : t("acres");
-  const receipt = `${t("receiptTitle")}\n\n${t("receiptFarmer")}: ${customer?.name ?? "-"}\n${t("receiptDate")}: ${date}\n${t("receiptWork")}: ${displayWorkType(work.work_type_name, language)}\n${t("sharedWorkDetails")}: ${work.quantity} ${unit} × ${money(work.rate)}\n${t("receiptTotal")}: ${money(work.total)}\n\n${paymentStatus(balance)}\n\n${t("thankYou")}`;
+  const receipt = `${t("receiptTitle")}\n\n${t("receiptFarmer")}: ${customer?.name ?? "-"}\n${t("receiptDate")}: ${date}\n${t("receiptWork")}: ${displayWorkType(work.work_type_name, language)}\n${t("sharedWorkDetails")}: ${work.quantity} ${unit} × ${money(work.rate)}\n\n${paymentStatus(balance)}\n\n${t("thankYou")}`;
   const phone = customer?.phone?.replace(/[^\d+]/g, "") ?? "";
 
   return (
-    <div className="modal-backdrop" role="presentation">
-      <section className="modal share-modal" role="dialog" aria-modal="true">
+    <div className="workflow-body">
+      <section className="workflow-panel share-page">
         <div className="modal-head">
           <div>
             <p className="eyebrow">{t("shareReceiptTitle")}</p>
@@ -2907,7 +2934,7 @@ function CustomerShareSheet({
       .join("\n\n");
 
     const pendingSection = pendingWorks.length
-      ? `${bold ? `*${t("sharedWorkDetails")}*` : t("sharedWorkDetails")}\n\n${details}\n\n${labelLine(t("totalPendingBalance"), money(totalPending), bold)}\n\nPhonePe / Google Pay ద్వారా\n${bold ? "*9704200894*" : "9704200894"} నంబర్‌కు చెల్లించండి.\nచెల్లించే ముందు పేరు సరిచూసుకోండి.`
+      ? `${bold ? `*${t("sharedWorkDetails")}*` : t("sharedWorkDetails")}\n\n${details}\n\n${labelLine(t("payableBalanceLabel"), money(totalPending), bold)}\n\nPhonePe / Google Pay ద్వారా\n${bold ? "*9704200894*" : "9704200894"} నంబర్‌కు చెల్లించండి.\nచెల్లించే ముందు పేరు సరిచూసుకోండి.`
       : bold ? `*${t("noPendingBalance")}*` : t("noPendingBalance");
 
     return `${title}\n\n${labelLine(t("receiptFarmer"), customer.name, bold)}\n\n${pendingSection}\n\n${t("thankYou")}`;
@@ -2918,8 +2945,8 @@ function CustomerShareSheet({
   const phone = customer.phone?.replace(/[^\d+]/g, "") ?? "";
 
   return (
-    <div className="modal-backdrop top-layer" role="presentation">
-      <section className="modal share-modal" role="dialog" aria-modal="true" aria-labelledby="customer-share-title">
+    <div className="workflow-body">
+      <section className="workflow-panel share-page" aria-labelledby="customer-share-title">
         <div className="modal-head">
           <div>
             <p className="eyebrow">{customer.name}</p>
@@ -2946,7 +2973,7 @@ function CustomerShareSheet({
                   </section>
                 );
               })}
-              <p className="statement-total"><strong>{t("totalPendingBalance")}:</strong> {money(totalPending)}</p>
+              <p className="statement-total"><strong>{t("payableBalanceLabel")}:</strong> {money(totalPending)}</p>
               <div className="statement-payment">
                 <p>PhonePe / Google Pay ద్వారా</p>
                 <p><strong>9704200894</strong> నంబర్‌కు చెల్లించండి.</p>

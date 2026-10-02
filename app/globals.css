@@ -5,7 +5,7 @@
   --primary-green-hover: #166534;
   --primary-green-vibrant: #16a34a;
   --primary-green-light: #dcfce7;
-  
+
   --pending-bg: #fee2e2;
   --pending-border: #fca5a5;
   --pending-text: #b91c1c;
@@ -13,7 +13,6 @@
   --received-bg: #dcfce7;
   --received-border: #bbf7d0;
   --received-text: #15803d;
-
   --total-bg: #e0f2fe;
   --total-border: #bae6fd;
   --total-text: #0369a1;
@@ -24,24 +23,17 @@
   --text-muted: #6b7280;
   --border-light: #e5e7eb;
 
-  --radius-lg: 20px;
-  --radius-md: 14px;
-  --radius-sm: 10px;
+  --radius-lg: 12px;
+  --radius-md: 8px;
+  --radius-sm: 8px;
 
   --topbar-height: 64px;
   --bottom-nav-height: 68px;
   --safe-bottom: env(safe-area-inset-bottom, 0px);
 }
 
-* {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
-}
-
 html {
   width: 100%;
-  max-width: 100vw;
   background: var(--background);
   color: var(--text-main);
   -webkit-text-size-adjust: 100%;
@@ -50,7 +42,6 @@ html {
 
 body {
   width: 100%;
-  max-width: 100vw;
   margin: 0;
   background: var(--background);
   color: var(--text-main);
@@ -84,7 +75,7 @@ a {
    ------------------------------------------------------------- */
 .app-shell {
   width: 100%;
-  max-width: 500px;
+  max-width: 100%;
   min-height: 100dvh;
   margin: 0 auto;
   background: var(--background);
@@ -218,6 +209,123 @@ a {
 .main-content {
   flex: 1;
   padding: 16px;
+  width: 100%;
+  max-width: 1120px;
+  margin: 0 auto;
+}
+
+.unsaved-warning {
+  position: sticky;
+  top: var(--topbar-height);
+  z-index: 35;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 16px;
+  background: #fff7ed;
+  color: #7c2d12;
+  border-bottom: 1px solid #fed7aa;
+}
+
+.unsaved-warning > div {
+  display: flex;
+  gap: 8px;
+}
+
+.unsaved-warning button {
+  min-height: 40px;
+  padding: 0 12px;
+  border: 1px solid #fdba74;
+  border-radius: var(--radius-sm);
+  background: #ffffff;
+  font-weight: 700;
+}
+
+.unsaved-warning .discard-button {
+  background: #9a3412;
+  border-color: #9a3412;
+  color: #ffffff;
+}
+
+.workflow-topbar {
+  min-height: 64px;
+  height: auto;
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr) auto;
+  gap: 12px;
+}
+
+.workflow-topbar h1 {
+  min-width: 0;
+  font-size: 18px;
+  line-height: 1.3;
+  overflow-wrap: anywhere;
+}
+
+.workflow-back {
+  width: 42px;
+  height: 42px;
+  display: grid;
+  place-items: center;
+  color: #ffffff;
+}
+
+.workflow-page,
+.workflow-body {
+  width: 100%;
+}
+
+.workflow-panel {
+  width: 100%;
+  max-width: 640px;
+  margin: 0 auto;
+  background: #ffffff;
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-md);
+}
+
+.workflow-panel input,
+.workflow-panel select {
+  min-height: 48px;
+}
+
+.workflow-panel .modal-head {
+  display: none;
+}
+
+.workflow-form {
+  display: grid;
+  gap: 16px;
+  padding: 20px;
+}
+
+.workflow-rate-fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.workflow-active-toggle {
+  min-height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 12px;
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-sm);
+}
+
+.workflow-active-toggle input {
+  width: 20px;
+  min-height: 20px;
+  accent-color: var(--primary-green);
+}
+
+.farmer-form-page,
+.payment-page,
+.share-page {
+  padding-bottom: 16px;
 }
 
 /* -------------------------------------------------------------
@@ -856,8 +964,8 @@ a {
 }
 
 .work-item-actions-row {
-  display: flex;
-  align-items: center;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 8px;
 }
 
@@ -877,51 +985,15 @@ a {
 }
 
 .work-action-btn.pay-action {
+  grid-column: 1 / -1;
   background: #f0fdf4;
   border-color: #bbf7d0;
   color: #15803d;
 }
 
 /* -------------------------------------------------------------
-   WORK MODAL & ADD WORK TILES (Matching Reference Screen 7)
+   WORKFLOW FORMS & ADD WORK TILES
    ------------------------------------------------------------- */
-.modal-backdrop {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.55);
-  display: flex;
-  align-items: flex-end;
-  justify-content: center;
-  z-index: 100;
-  backdrop-filter: blur(3px);
-}
-
-@media (min-width: 640px) {
-  .modal-backdrop {
-    align-items: center;
-    padding: 20px;
-  }
-}
-
-.modal {
-  background: #ffffff;
-  width: 100%;
-  max-width: 500px;
-  max-height: 92dvh;
-  border-radius: 24px 24px 0 0;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-  box-shadow: 0 -4px 25px rgba(0, 0, 0, 0.15);
-}
-
-@media (min-width: 640px) {
-  .modal {
-    border-radius: 24px;
-    max-height: 85dvh;
-  }
-}
-
 .modal-head {
   padding: 16px 20px;
   border-bottom: 1px solid #f3f4f6;
@@ -945,7 +1017,7 @@ a {
 
 .add-work-form {
   padding: 16px 20px 24px;
-  overflow-y: auto;
+  overflow: visible;
   display: flex;
   flex-direction: column;
   gap: 16px;
@@ -989,7 +1061,7 @@ a {
 .input-group input,
 .new-farmer-fields input {
   width: 100%;
-  height: 44px;
+  height: 48px;
   background: #f9fafb;
   border: 1px solid #d1d5db;
   border-radius: var(--radius-sm);
@@ -1014,37 +1086,35 @@ a {
 }
 
 .contact-picker-btn {
+  min-height: 44px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
-  height: 38px;
-  background: #f0fdf4;
+  padding: 0 12px;
   border: 1px solid #bbf7d0;
   border-radius: var(--radius-sm);
-  color: #15803d;
-  font-size: 13px;
-  font-weight: 600;
+  background: #f0fdf4;
+  color: var(--primary-green);
 }
 
-/* Work Type Tiles Grid */
 .work-type-tiles-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(auto-fit, minmax(96px, 1fr));
   gap: 10px;
 }
 
 .work-type-tile {
+  min-height: 104px;
   border: 2px solid transparent;
   border-radius: var(--radius-md);
-  padding: 12px 6px 8px;
+  padding: 10px 6px;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   text-align: center;
   position: relative;
-  transition: all 0.15s;
 }
 
 .tile-icon-wrap {
@@ -1054,7 +1124,6 @@ a {
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
   margin-bottom: 6px;
 }
 
@@ -1073,14 +1142,14 @@ a {
 
 .form-row-two {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 12px;
 }
 
 .input-group {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 8px;
 }
 
 .field-label {
@@ -1095,7 +1164,7 @@ a {
   background: #f3f4f6;
   padding: 3px;
   border-radius: var(--radius-sm);
-  height: 44px;
+  height: 48px;
 }
 
 .segmented-toggle button {
@@ -1119,7 +1188,7 @@ a {
   border-radius: var(--radius-sm);
   background: #f9fafb;
   overflow: hidden;
-  height: 44px;
+  height: 48px;
 }
 
 .stepper-input button {
@@ -1224,7 +1293,7 @@ a {
 /* -------------------------------------------------------------
    WORK SAVED MODAL (Matching Reference Screen 9)
    ------------------------------------------------------------- */
-.work-saved-modal {
+.work-saved-page {
   padding: 30px 24px;
   text-align: center;
   display: flex;
@@ -1318,7 +1387,7 @@ a {
 /* -------------------------------------------------------------
    PAYMENT MODAL (Matching Reference Screen 8)
    ------------------------------------------------------------- */
-.payment-screen-modal {
+.payment-page {
   padding: 0;
 }
 
@@ -1358,23 +1427,20 @@ a {
 .work-types-settings-page {
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 16px;
+  max-width: 640px;
+  margin: 0 auto;
 }
 
 .work-types-list-cards {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  border-top: 1px solid var(--border-light);
 }
 
-.work-type-rate-card {
-  background: #ffffff;
-  border: 1px solid var(--border-light);
-  border-radius: var(--radius-md);
-  padding: 12px 14px;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
+.work-type-rate-row {
+  padding: 12px 0;
+  border-bottom: 1px solid var(--border-light);
 }
 
 .type-row-top {
@@ -1387,6 +1453,8 @@ a {
   display: flex;
   align-items: center;
   gap: 10px;
+  min-width: 0;
+  flex: 1;
 }
 
 .type-avatar {
@@ -1408,6 +1476,8 @@ a {
 .type-icon-name-wrap small {
   font-size: 12px;
   color: var(--text-muted);
+  display: block;
+  overflow-wrap: anywhere;
 }
 
 .type-actions-wrap {
@@ -1456,8 +1526,10 @@ a {
 .add-type-btn {
   background: var(--primary-green);
   color: #ffffff;
-  height: 44px;
-  padding: 0 18px;
+  width: 100%;
+  min-height: 48px;
+  justify-content: center;
+  padding: 0 16px;
   border-radius: var(--radius-sm);
   font-weight: 700;
   display: flex;
@@ -1470,6 +1542,8 @@ a {
   display: flex;
   flex-direction: column;
   gap: 16px;
+  max-width: 640px;
+  margin: 0 auto;
 }
 
 .profile-summary-card {
@@ -1584,7 +1658,7 @@ a {
   left: 50%;
   transform: translateX(-50%);
   width: 100%;
-  max-width: 500px;
+  max-width: 100%;
   height: calc(var(--bottom-nav-height) + var(--safe-bottom));
   padding-bottom: var(--safe-bottom);
   background: #ffffff;
@@ -1844,6 +1918,44 @@ a {
   to { transform: rotate(360deg); }
 }
 
+.form-actions-sticky {
+  position: sticky;
+  bottom: 0;
+  z-index: 4;
+  padding: 8px 0 max(8px, env(safe-area-inset-bottom));
+  background: #ffffff;
+}
+
+@media (max-width: 600px) {
+  .workflow-topbar h1 { font-size: 17px; }
+  .workflow-rate-fields,
+  .form-row-two { grid-template-columns: 1fr; }
+  .workflow-panel {
+    background: transparent;
+    border: 0;
+    border-radius: 0;
+  }
+  .add-work-form,
+  .payment-form,
+  .stack-form { padding: 0; }
+  .work-saved-page { padding: 16px; }
+  .share-page { padding: 0; }
+  .share-actions { grid-template-columns: 1fr; }
+  .receipt { max-height: none; }
+  .customer-hero-card { padding: 12px; gap: 8px; }
+  .customer-hero-text h1 { font-size: 18px; overflow-wrap: anywhere; }
+  .work-item-actions-row { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .work-action-btn { min-height: 44px; height: auto; padding: 6px 4px; }
+  .type-row-top { align-items: center; gap: 8px; }
+  .type-icon-name-wrap { gap: 8px; }
+  .type-icon-name-wrap strong { overflow-wrap: anywhere; }
+  .type-icon-name-wrap small { line-height: 1.4; }
+  .unsaved-warning { align-items: flex-start; flex-direction: column; }
+  .unsaved-warning > div { width: 100%; }
+  .unsaved-warning button { flex: 1; }
+  .form-actions-sticky { position: static; padding-bottom: max(8px, env(safe-area-inset-bottom)); }
+}
+
 /* -------------------------------------------------------------
    TOGGLE SWITCH
    ------------------------------------------------------------- */
@@ -1892,7 +2004,7 @@ a {
 /* -------------------------------------------------------------
    RECEIPTS & SHARE MODALS
    ------------------------------------------------------------- */
-.share-modal {
+.share-page {
   padding: 20px;
 }
 
@@ -1905,8 +2017,7 @@ a {
   border: 1px solid #e5e7eb;
   border-radius: var(--radius-md);
   padding: 14px;
-  max-height: 300px;
-  overflow-y: auto;
+  overflow-wrap: anywhere;
   margin: 12px 0;
 }
 
