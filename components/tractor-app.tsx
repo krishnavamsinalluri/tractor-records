@@ -37,7 +37,7 @@ import {
   EnvelopeFill,
   LockFill,
 } from "react-bootstrap-icons";
-import { FormEvent, useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
+import { FormEvent, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { IconButton } from "@/components/icon-button";
 import {
   friendlyError,
@@ -45,7 +45,9 @@ import {
   useLanguage,
   type MessageKey,
 } from "@/components/language-provider";
-import { WorkTypeIcon, TractorBrandIcon, getWorkTypeMeta } from "@/components/work-type-icon";
+import { WorkTypeIcon } from "@/components/work-type-icon";
+import { WorkTypeThumbnail } from "@/components/work-type-thumbnail";
+import { saveWorkTypeWithImage, workTypeImageFileError, WORK_TYPE_IMAGE_ACCEPT } from "@/lib/work-type-images";
 import { getPasswordRecoveryRedirectUrl, getSupabase, hasSupabaseConfig } from "@/lib/supabase";
 import type { ChargeBasis, Customer, Payment, WorkRecord, WorkType } from "@/lib/types";
 
@@ -263,6 +265,7 @@ function TractorAppContent() {
   const [savedWorkForShare, setSavedWorkForShare] = useState<WorkRecord | null>(null);
   const customerListScroll = useRef(0);
   const detailOpenedFromList = useRef(false);
+  const pendingBottomNavigation = useRef(false);
   const previousPath = useRef(pathname);
 
   const customerMatch = pathname.match(/^\/customers\/([^/]+)/);
@@ -417,6 +420,12 @@ function TractorAppContent() {
     previousPath.current = pathname;
   }, [pathname]);
 
+  useLayoutEffect(() => {
+    if (!pendingBottomNavigation.current) return;
+    pendingBottomNavigation.current = false;
+    window.scrollTo(0, 0);
+  }, [pathname]);
+
   useEffect(() => {
     const showWarning = (event: Event) => setUnsavedNavigation((event as CustomEvent<UnsavedNavigation>).detail);
     window.addEventListener("tractor-unsaved-navigation", showWarning);
@@ -476,6 +485,13 @@ function TractorAppContent() {
     const fallback = customerId ? `/customers/${encodeURIComponent(customerId)}` : "/";
     router.replace(safeFrom ?? fallback, { scroll: false });
   };
+  const prepareBottomNavigation = (destination: string, event?: React.MouseEvent<HTMLAnchorElement>) => {
+    if (event && (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey)) return;
+    setCustomerQuery("");
+    setCustomerFilters({});
+    pendingBottomNavigation.current = destination !== pathname;
+    if (destination === pathname) window.scrollTo(0, 0);
+  };
   const openCustomer = (customer: Customer) => {
     customerListScroll.current = window.scrollY;
     detailOpenedFromList.current = true;
@@ -514,7 +530,7 @@ function TractorAppContent() {
           </>
         ) : <>
         <div className="brand">
-          <span className="brand-mark"><TractorBrandIcon size={28} color="#ffffff" /></span>
+          <span className="brand-mark"><Image className="brand-logo-image" src="/images/logo.png" alt="" width={36} height={36} /></span>
           <div className="brand-text">
             <strong>{t("appName")}</strong>
             <small>{t("greeting")}</small>
@@ -616,7 +632,11 @@ function TractorAppContent() {
               <WorkTypeSettings workTypes={workTypes} onRefresh={loadData} setNotice={setNotice} onAdd={() => router.push(workflowUrl("/work-types/new"), { scroll: false })} onEdit={(type) => router.push(workflowUrl(`/work-types/${encodeURIComponent(type.id)}/edit`), { scroll: false })} />
             )}
             {(dialog === "add-work-type" || dialog === "edit-work-type") && (
-              <div className="workflow-panel"><WorkTypeForm workType={workTypes.find((type) => type.id === workTypeId)} onSaved={async () => { await loadData(); closeDialog(); }} setNotice={setNotice} /></div>
+              <div className="workflow-panel">
+                {dialog === "edit-work-type" && !workTypes.some((type) => type.id === workTypeId)
+                  ? <p role="status">{t(loading ? "loading" : "workTypeUnavailable")}</p>
+                  : <WorkTypeForm key={workTypeId ?? "new"} workType={workTypes.find((type) => type.id === workTypeId)} onSaved={async () => { await loadData(); closeDialog(); }} setNotice={setNotice} />}
+              </div>
             )}
             {dialog === "profile" && (
               <SettingsView session={session} workTypes={workTypes} onSignOut={() => void signOut()} onOpenWorkTypes={() => router.push(workflowUrl("/work-types"), { scroll: false })} onChangePassword={() => router.push(workflowUrl("/profile/password"), { scroll: false })} />
@@ -695,19 +715,19 @@ function TractorAppContent() {
       {/* Floating Bottom Navigation */}
       {!isCustomerDetail && !dialog && (
         <nav className="bottom-nav" aria-label={t("appSubtitle")}>
-          <Link className={view === "dashboard" ? "active" : ""} href="/">
-            {view === "dashboard" ? <HouseDoorFill size={22} /> : <HouseDoor size={22} />}
+          <Link className={pathname === "/" ? "active" : ""} href="/" scroll={false} onClick={(event) => prepareBottomNavigation("/", event)}>
+            {pathname === "/" ? <HouseDoorFill size={22} /> : <HouseDoor size={22} />}
             <span>{t("navHome")}</span>
           </Link>
-          <Link className={view === "customers" ? "active" : ""} href="/customers">
-            {view === "customers" ? <PeopleFill size={22} /> : <People size={22} />}
+          <Link className={pathname === "/customers" ? "active" : ""} href="/customers" scroll={false} onClick={(event) => prepareBottomNavigation("/customers", event)}>
+            {pathname === "/customers" ? <PeopleFill size={22} /> : <People size={22} />}
             <span>{t("navCustomers")}</span>
           </Link>
           {/* Prominent Add Work Button */}
           <button
             type="button"
             className="bottom-nav-action"
-            onClick={() => openNewWork()}
+            onClick={() => { prepareBottomNavigation("/work/new"); openNewWork(); }}
             aria-label={t("addWork")}
             title={t("addWork")}
           >
@@ -716,12 +736,12 @@ function TractorAppContent() {
             </div>
             <span>{t("navWork")}</span>
           </button>
-          <Link className={view === "pending" ? "active" : ""} href="/pending">
+          <Link className={pathname === "/pending" ? "active" : ""} href="/pending" scroll={false} onClick={(event) => prepareBottomNavigation("/pending", event)}>
             <ClockHistory size={22} />
             <span>{t("navPending")}</span>
           </Link>
-          <Link className={view === "settings" ? "active" : ""} href="/settings">
-            {view === "settings" ? <GearFill size={22} /> : <Gear size={22} />}
+          <Link className={pathname === "/settings" ? "active" : ""} href="/settings" scroll={false} onClick={(event) => prepareBottomNavigation("/settings", event)}>
+            {pathname === "/settings" ? <GearFill size={22} /> : <Gear size={22} />}
             <span>{t("navSettings")}</span>
           </Link>
         </nav>
@@ -736,7 +756,7 @@ function SetupRequired() {
   return (
     <div className="setup-screen">
       <div className="setup-toolbar"><LanguageToggle /></div>
-      <div className="setup-icon"><TractorBrandIcon size={44} color="#15803d" /></div>
+      <div className="setup-icon"><Image className="brand-logo-image" src="/images/logo.png" alt="" width={56} height={56} /></div>
       <p className="eyebrow">{t("setupOnce")}</p>
       <h1>{t("setupTitle")}</h1>
       <p>{t("setupHelp")}</p>
@@ -775,15 +795,18 @@ function Login() {
     <main className="login-screen">
       {/* Background illustration: panoramic tractor field sunset */}
       <div className="login-bg-overlay">
-        <Image
-          className="login-bg-image"
-          src="/images/dashboard-banner.png"
-          alt={t("loginIllustrationAlt")}
-          fill
-          priority
-          sizes="100vw"
-          style={{ objectFit: "cover", objectPosition: "center 30%" }}
-        />
+        <picture className="login-bg-picture">
+          <source media="(max-width: 600px)" srcSet="/moblielogin.png" />
+          <Image
+            className="login-bg-image"
+            src="/images/dashboard-banner.png"
+            alt={t("loginIllustrationAlt")}
+            fill
+            priority
+            sizes="100vw"
+            style={{ objectFit: "cover", objectPosition: "center 30%" }}
+          />
+        </picture>
         <div className="login-bg-dim" />
       </div>
 
@@ -791,7 +814,7 @@ function Login() {
         {/* Top Branding matching reference Screen 1 */}
         <div className="login-brand-header">
           <div className="login-tractor-logo">
-            <TractorBrandIcon size={56} color="#15803d" />
+            <Image className="brand-logo-image" src="/images/logo.png" alt="" width={64} height={64} />
           </div>
           <h1 className="login-app-title">{t("appName")}</h1>
           <p className="login-app-tagline">{t("appTagline")}</p>
@@ -801,6 +824,10 @@ function Login() {
         <section className="login-card">
           <div className="login-card-top">
             <LanguageToggle compact />
+          </div>
+          <div className="login-card-heading">
+            <h2>{t("loginWelcome")}</h2>
+            <p>{t("loginHelp")}</p>
           </div>
           <form onSubmit={submit} className="login-form">
             <label className="input-group">
@@ -844,7 +871,8 @@ function Login() {
             {error && <p className="form-error" role="alert">{error}</p>}
 
             <button type="submit" className="login-submit-button" disabled={busy}>
-              {busy ? t("signingIn") : t("loginBtn")}
+              <span>{busy ? t("signingIn") : t("loginBtn")}</span>
+              <span aria-hidden="true">→</span>
             </button>
 
             <div className="login-links">
@@ -853,6 +881,7 @@ function Login() {
               </Link>
             </div>
           </form>
+          <p className="login-security-note"><LockFill size={15} />{t("loginSecurityNote")}</p>
         </section>
       </div>
     </main>
@@ -898,7 +927,7 @@ function ForgotPassword() {
       <div className="login-container">
         <div className="login-brand-header">
           <div className="login-tractor-logo">
-            <TractorBrandIcon size={48} color="#15803d" />
+            <Image className="brand-logo-image" src="/images/logo.png" alt="" width={56} height={56} />
           </div>
           <h1 className="login-app-title">{t("appName")}</h1>
         </div>
@@ -1873,29 +1902,25 @@ function WorkModal({
             <div className="work-type-tiles-grid">
               {activeTypes.map((type) => {
                 const isSelected = type.id === workTypeId;
-                const meta = getWorkTypeMeta(type.name);
                 return (
                   <button
                     key={type.id}
                     type="button"
+                    aria-pressed={isSelected}
                     className={`work-type-tile ${isSelected ? "selected" : ""}`}
                     onClick={() => selectWorkType(type.id)}
-                    style={{
-                      borderColor: isSelected ? "#15803d" : meta.border,
-                      background: isSelected ? "#f0fdf4" : meta.bg,
-                    }}
                   >
-                    <div className="tile-icon-wrap" style={{ background: isSelected ? "#dcfce7" : "#ffffff" }}>
-                      <WorkTypeIcon name={type.name} size={28} />
+                    <div className="tile-icon-wrap">
+                      <WorkTypeThumbnail workType={type} size={40} />
+                      {isSelected && (
+                        <span className="tile-check-badge">
+                          <CheckCircleFill size={14} color="#15803d" />
+                        </span>
+                      )}
                     </div>
                     <span className="tile-name">
                       {displayWorkType(type.name, language)}
                     </span>
-                    {isSelected && (
-                      <div className="tile-check-badge">
-                        <CheckCircleFill size={14} color="#15803d" />
-                      </div>
-                    )}
                   </button>
                 );
               })}
@@ -2569,7 +2594,7 @@ function WorkTypeRateRow({
       <div className="type-row-top">
         <div className="type-icon-name-wrap">
           <div className="type-avatar">
-            <WorkTypeIcon name={workType.name} size={24} />
+            <WorkTypeThumbnail workType={workType} />
           </div>
           <div>
             <strong>{displayWorkType(workType.name, language)}</strong>
@@ -2610,13 +2635,36 @@ function WorkTypeForm({
   const [acreRate, setAcreRate] = useState(workType?.acre_rate == null ? "" : String(workType.acre_rate));
   const [hourRate, setHourRate] = useState(workType?.hour_rate == null ? "" : String(workType.hour_rate));
   const [active, setActive] = useState(workType?.active ?? true);
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [removeImage, setRemoveImage] = useState(false);
+  const [previewUrl, setPreviewUrl] = useState<string>();
+  const imageInput = useRef<HTMLInputElement>(null);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
-  const isDirty = name !== (workType?.name ?? "") || acreRate !== (workType?.acre_rate == null ? "" : String(workType.acre_rate)) || hourRate !== (workType?.hour_rate == null ? "" : String(workType.hour_rate)) || active !== (workType?.active ?? true);
-  useUnsavedChangesGuard(isDirty && !busy);
+  const savingRef = useRef(false);
+  const [saved, setSaved] = useState(false);
+  const isDirty = Boolean(imageFile) || removeImage || name !== (workType?.name ?? "") || acreRate !== (workType?.acre_rate == null ? "" : String(workType.acre_rate)) || hourRate !== (workType?.hour_rate == null ? "" : String(workType.hour_rate)) || active !== (workType?.active ?? true);
+  useUnsavedChangesGuard(isDirty && !busy && !saved);
+
+  useEffect(() => {
+    if (!previewUrl) return;
+    return () => URL.revokeObjectURL(previewUrl);
+  }, [previewUrl]);
+
+  const selectImage = (file: File | undefined) => {
+    if (!file) return;
+    const validationError = workTypeImageFileError(file);
+    if (imageInput.current) imageInput.current.value = "";
+    if (validationError) return setError(t(validationError));
+    setError("");
+    setImageFile(file);
+    setPreviewUrl(URL.createObjectURL(file));
+    setRemoveImage(false);
+  };
 
   const submit = async (event: FormEvent) => {
     event.preventDefault();
+    if (savingRef.current || saved) return;
     setError("");
     const parsedAcreRate = acreRate === "" ? null : Number(acreRate);
     const parsedHourRate = hourRate === "" ? null : Number(hourRate);
@@ -2625,27 +2673,52 @@ function WorkTypeForm({
       return setError(t("invalidRate"));
     }
 
+    savingRef.current = true;
     setBusy(true);
-    const supabase = getSupabase();
     const values = { name: name.trim(), acre_rate: parsedAcreRate, hour_rate: parsedHourRate, active };
-    const result = workType
-      ? await supabase.from("work_types").update(values).eq("id", workType.id)
-      : await supabase.from("work_types").insert({ ...values, user_id: (await supabase.auth.getUser()).data.user?.id });
-    setBusy(false);
-    if (result.error) {
-      setError(friendlyError(result.error.message, t));
-      return;
+    try {
+      await saveWorkTypeWithImage(getSupabase(), { workType, values, file: imageFile, removeImage });
+      setSaved(true);
+      setNotice({ tone: "success", text: workType ? t("workTypeUpdated") : t("workTypeAdded") });
+      await onSaved();
+    } catch (saveError) {
+      const message = saveError instanceof Error ? saveError.message : String((saveError as { message?: string })?.message ?? saveError);
+      setError(message === "sessionExpired" ? t("sessionExpired") : friendlyError(message, t));
+    } finally {
+      savingRef.current = false;
+      setBusy(false);
     }
-    setNotice({ tone: "success", text: workType ? t("workTypeUpdated") : t("workTypeAdded") });
-    await onSaved();
   };
 
   return (
     <form className="workflow-form" onSubmit={submit}>
+      <fieldset className="work-type-form-fields" disabled={busy || saved}>
       <label className="input-group">
         <FieldLabel label={t("workTypeName")} />
         <input value={name} onChange={(event) => setName(event.target.value)} required autoFocus />
       </label>
+      <div className="input-group work-type-image-field">
+        <label htmlFor="work-type-image"><FieldLabel label={t("workTypeImage")} /></label>
+        <small id="work-type-image-help">{t("workTypeImageHelp")}</small>
+        <input ref={imageInput} id="work-type-image" type="file" accept={WORK_TYPE_IMAGE_ACCEPT} capture="environment"
+          aria-describedby="work-type-image-help" onChange={(event) => selectImage(event.target.files?.[0])} />
+        <div className="work-type-image-preview">
+          <WorkTypeThumbnail workType={{ name, image_path: removeImage ? null : workType?.image_path ?? null }}
+            previewUrl={imageFile ? previewUrl : undefined} size={80} />
+          {(imageFile || (!removeImage && workType?.image_path)) && (
+            <div className="work-type-image-actions">
+              <button type="button" className="text-button" onClick={() => imageInput.current?.click()}>{t("changeWorkTypeImage")}</button>
+              <button type="button" className="text-button" onClick={() => {
+                setImageFile(null);
+                setPreviewUrl(undefined);
+                setRemoveImage(Boolean(workType?.image_path));
+                setError("");
+                if (imageInput.current) imageInput.current.value = "";
+              }}>{t("removeWorkTypeImage")}</button>
+            </div>
+          )}
+        </div>
+      </div>
       <div className="workflow-rate-fields">
         <label className="input-group">
           <FieldLabel label={t("acreRate")} />
@@ -2660,6 +2733,7 @@ function WorkTypeForm({
         <span>{t("availableInForm")}</span>
         <input type="checkbox" checked={active} onChange={(event) => setActive(event.target.checked)} />
       </label>
+      </fieldset>
       {error && <p className="form-error" role="alert">{error}</p>}
       <button type="submit" className="save-work-submit-btn" disabled={busy}>{busy ? t("saving") : t("save")}</button>
     </form>

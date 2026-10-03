@@ -13,6 +13,7 @@ export type WorkType = {
   user_id: string;
   name: string;
   active: boolean;
+  image_path: string | null;
   acre_rate?: number | null;
   hour_rate?: number | null;
   created_at: string;
