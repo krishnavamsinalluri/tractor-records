@@ -2151,8 +2151,28 @@ a {
   .payment-form,
   .stack-form { padding: 0; }
   .work-saved-page { padding: 16px; }
-  .share-page { padding: 0; }
-  .share-actions { grid-template-columns: 1fr; }
+  .workflow-panel.farmer-form-page {
+    width: calc(100% - 24px);
+    margin: 12px auto;
+    background: #ffffff;
+    border: 1px solid #e1e9e3;
+    border-radius: 16px;
+  }
+  .workflow-panel.farmer-form-page .modal-head { display: none; }
+  .farmer-customer-form { padding: 16px; gap: 14px; }
+  .farmer-customer-form .contact-picker-btn { min-height: 48px; }
+  .farmer-customer-form .login-submit-button { min-height: 50px; }
+  .workflow-panel.share-page {
+    width: calc(100% - 24px);
+    max-width: 600px;
+    margin: 14px auto;
+    padding: 14px;
+    background: #ffffff;
+    border: 1px solid #e2e8e4;
+    border-radius: 16px;
+    box-shadow: 0 6px 22px rgba(15, 55, 34, 0.07);
+  }
+  .share-page .receipt { margin: 12px 0; padding: 12px; }
   .receipt { max-height: none; }
   .customer-hero-card { padding: 12px; gap: 8px; }
   .customer-hero-text h1 { font-size: 18px; overflow-wrap: anywhere; }
@@ -2316,6 +2336,27 @@ a {
   margin-top: 8px;
   font-weight: 600;
   color: #6b7280;
+}
+
+@media (max-width: 600px) {
+  .share-actions {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+  .share-actions a {
+    min-width: 0;
+    padding: 0 8px;
+    font-size: 13px;
+  }
+  .share-page > .text-button {
+    width: 100%;
+    min-height: 42px;
+    margin-top: 4px;
+  }
+}
+
+@media (max-width: 430px) {
+  .share-actions { grid-template-columns: 1fr; }
 }
 
 .empty-state {

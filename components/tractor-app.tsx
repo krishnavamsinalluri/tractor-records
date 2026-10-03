@@ -2729,7 +2729,7 @@ function WorkTypeForm({
       <div className="input-group work-type-image-field">
         <label htmlFor="work-type-image"><FieldLabel label={t("workTypeImage")} /></label>
         <small id="work-type-image-help">{t("workTypeImageHelp")}</small>
-        <input ref={imageInput} id="work-type-image" type="file" accept={WORK_TYPE_IMAGE_ACCEPT} capture="environment"
+        <input ref={imageInput} id="work-type-image" type="file" accept={WORK_TYPE_IMAGE_ACCEPT}
           aria-describedby="work-type-image-help" onChange={(event) => selectImage(event.target.files?.[0])} />
         <div className="work-type-image-preview">
           <WorkTypeThumbnail workType={{ name, image_path: removeImage ? null : workType?.image_path ?? null }}
