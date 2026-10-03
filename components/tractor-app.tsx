@@ -1911,7 +1911,9 @@ function WorkModal({
                     onClick={() => selectWorkType(type.id)}
                   >
                     <div className="tile-icon-wrap">
-                      <WorkTypeThumbnail workType={type} size={40} />
+                      {type.image_path
+                        ? <WorkTypeThumbnail workType={type} size={40} />
+                        : <WorkTypeIcon name={type.name} size={28} />}
                       {isSelected && (
                         <span className="tile-check-badge">
                           <CheckCircleFill size={14} color="#15803d" />
@@ -2458,8 +2460,30 @@ function NewCustomerModal({
   const [phone, setPhone] = useState(customer?.phone ?? "");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const contactPickerSupported = useSyncExternalStore(
+    subscribeToContactPickerSupport,
+    getContactPickerSupport,
+    getServerContactPickerSupport
+  );
   const isDirty = name !== (customer?.name ?? "") || phone !== (customer?.phone ?? "");
   const requestClose = useUnsavedChangesGuard(isDirty && !busy);
+
+  const selectContact = async () => {
+    const contacts = navigator.contacts;
+    if (!contacts) return;
+    try {
+      const selected = await contacts.select(["name", "tel"], { multiple: false });
+      const contact = selected[0];
+      if (!contact) return;
+      const selectedName = contact.name?.find((value) => value.trim())?.trim();
+      const selectedPhone = [...new Set((contact.tel ?? []).map((value) => value.trim()).filter(Boolean))][0];
+      if (selectedName) setName(selectedName);
+      if (selectedPhone) setPhone(selectedPhone);
+      setError("");
+    } catch {
+      setError(t("contactPickerError"));
+    }
+  };
 
   const submit = async (event: FormEvent) => {
     event.preventDefault();
@@ -2497,7 +2521,12 @@ function NewCustomerModal({
           </div>
           <IconButton icon={X} label={t("close")} onClick={() => requestClose(onClose)} />
         </div>
-        <form onSubmit={submit} className="stack-form">
+        <form onSubmit={submit} className="stack-form farmer-customer-form">
+          {!customer && contactPickerSupported && (
+            <button type="button" className="contact-picker-btn" onClick={() => void selectContact()}>
+              <Phone size={16} /> {t("selectContact")}
+            </button>
+          )}
           <label className="input-group">
             <FieldLabel label={t("farmerName")} />
             <input

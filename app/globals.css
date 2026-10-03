@@ -334,6 +334,58 @@ a {
   padding-bottom: 16px;
 }
 
+.workflow-panel.farmer-form-page {
+  max-width: 520px;
+  overflow: hidden;
+  border-color: #e1e9e3;
+  border-radius: 16px;
+  box-shadow: 0 8px 24px rgba(15, 55, 34, 0.08);
+  padding-bottom: 0;
+}
+
+.workflow-panel.farmer-form-page .modal-head {
+  display: flex;
+  padding: 18px 20px;
+  background: #ffffff;
+}
+
+.farmer-customer-form {
+  display: grid;
+  gap: 16px;
+  padding: 20px;
+}
+
+.farmer-customer-form .contact-picker-btn {
+  width: 100%;
+}
+
+.farmer-customer-form .input-group {
+  gap: 7px;
+}
+
+.farmer-customer-form .field-label {
+  color: #244c37;
+  font-size: 13px;
+}
+
+.workflow-panel.farmer-form-page .farmer-customer-form input {
+  height: 52px;
+  border-color: #d5dfd8;
+  border-radius: 10px;
+  background: #ffffff;
+}
+
+.workflow-panel.farmer-form-page .farmer-customer-form input:focus {
+  border-color: #15803d;
+  box-shadow: 0 0 0 3px rgba(21, 128, 61, 0.1);
+}
+
+.farmer-customer-form .login-submit-button {
+  height: 52px;
+  margin-top: 2px;
+  border-radius: 11px;
+}
+
 /* -------------------------------------------------------------
    HERO STAT CARD (రావాల్సిన బాకీ - Pale Red)
    ------------------------------------------------------------- */
@@ -1999,6 +2051,19 @@ a {
 }
 
 @media (max-width: 600px) {
+  .work-type-tiles-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+  .work-type-tile {
+    min-height: 62px;
+    padding: 7px;
+    gap: 7px;
+  }
+  .tile-name {
+    font-size: 12px;
+    overflow-wrap: anywhere;
+  }
   .login-screen {
     min-height: 100svh;
     min-height: 100dvh;
