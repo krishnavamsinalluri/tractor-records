@@ -517,6 +517,8 @@ function TractorAppContent() {
     router.replace("/");
   };
 
+  const currentUserName = (session?.user?.user_metadata?.name as string) || (session?.user?.email?.split("@")[0] ?? "");
+
   return (
     <div className={isCustomerDetail || dialog ? "app-shell" : "app-shell has-bottom-nav"}>
       <header className={`topbar${dialog ? " workflow-topbar" : ""}`}>
@@ -533,7 +535,7 @@ function TractorAppContent() {
           <span className="brand-mark"><Image className="brand-logo-image" src="/images/logo.png" alt="" width={36} height={36} /></span>
           <div className="brand-text">
             <strong>{t("appName")}</strong>
-            <small>{t("greeting")}</small>
+            <small>{currentUserName ? `${t("greeting")}, ${currentUserName}` : t("greeting")}</small>
           </div>
         </div>
         <div className="topbar-actions">
@@ -774,6 +776,8 @@ function Login() {
   const { language, t } = useLanguage();
   const router = useRouter();
   const [mode, setMode] = useState<"signin" | "signup">("signin");
+  const [name, setName] = useState("");
+  const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [passwordVisible, setPasswordVisible] = useState(false);
@@ -794,14 +798,25 @@ function Login() {
     setSuccessMsg("");
 
     if (mode === "signup") {
+      if (!name.trim()) {
+        setError(t("enterYourName"));
+        setBusy(false);
+        return;
+      }
       if (password.length < 6) {
         setError(language === "te" ? "పాస్‌వర్డ్ కనీసం 6 అక్షరాలు ఉండాలి." : "Password must be at least 6 characters.");
         setBusy(false);
         return;
       }
       const { data, error: authError } = await getSupabase().auth.signUp({
-        email,
+        email: email.trim(),
         password,
+        options: {
+          data: {
+            name: name.trim(),
+            phone: phone.trim(),
+          },
+        },
       });
       if (authError) {
         setError(friendlyError(authError.message, t));
@@ -813,7 +828,7 @@ function Login() {
         setBusy(false);
       }
     } else {
-      const { error: authError } = await getSupabase().auth.signInWithPassword({ email, password });
+      const { error: authError } = await getSupabase().auth.signInWithPassword({ email: email.trim(), password });
       if (authError) {
         setError(friendlyError(authError.message, t));
         setBusy(false);
@@ -882,6 +897,39 @@ function Login() {
           </div>
 
           <form onSubmit={submit} className="login-form">
+            {mode === "signup" && (
+              <>
+                <label className="input-group">
+                  <FieldLabel label={t("yourName")} />
+                  <div className="icon-input-wrap">
+                    <PersonFill size={18} className="field-icon" />
+                    <input
+                      type="text"
+                      required
+                      value={name}
+                      onChange={(event) => setName(event.target.value)}
+                      autoComplete="name"
+                      placeholder={t("enterYourName")}
+                    />
+                  </div>
+                </label>
+
+                <label className="input-group">
+                  <FieldLabel label={t("phoneNumber")} />
+                  <div className="icon-input-wrap">
+                    <TelephoneFill size={17} className="field-icon" />
+                    <input
+                      type="tel"
+                      value={phone}
+                      onChange={(event) => setPhone(event.target.value)}
+                      autoComplete="tel"
+                      placeholder={t("enterPhoneNumber")}
+                    />
+                  </div>
+                </label>
+              </>
+            )}
+
             <label className="input-group">
               <FieldLabel label={t("email")} />
               <div className="icon-input-wrap">
@@ -2871,6 +2919,8 @@ function SettingsView({
   onChangePassword: () => void;
 }) {
   const { language, setLanguage, t } = useLanguage();
+  const userName = (session?.user?.user_metadata?.name as string) || (session?.user?.email?.split("@")[0] ?? "Owner");
+  const userPhone = (session?.user?.user_metadata?.phone as string) || "";
 
   return (
     <div className="settings-page-content">
@@ -2880,8 +2930,9 @@ function SettingsView({
           <PersonFill size={36} color="#ffffff" />
         </div>
         <div className="profile-info-text">
-          <strong>{session?.user?.email?.split("@")[0] ?? "Owner"}</strong>
-          <small>{session?.user?.email ?? ""}</small>
+          <strong>{userName}</strong>
+          {userPhone && <p className="profile-phone-text">{userPhone}</p>}
+          <small className="profile-email-text">{session?.user?.email ?? ""}</small>
         </div>
       </section>
 
