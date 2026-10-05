@@ -13,6 +13,7 @@ import {
   HouseDoorFill,
   PeopleFill,
   GearFill,
+  VolumeUpFill,
   LockFill,
   EnvelopeFill,
   PersonFill,
@@ -111,25 +112,27 @@ export default function SimpleDemoPage() {
   const sceneRef = useRef(scene);
   sceneRef.current = scene;
 
-  const handleNext = () => {
-    if (nextSceneTimeoutRef.current) clearTimeout(nextSceneTimeoutRef.current);
+  const stopAudio = () => {
     if (typeof window !== "undefined" && "speechSynthesis" in window) {
       window.speechSynthesis.cancel();
     }
+  };
+
+  const handleNext = () => {
+    if (nextSceneTimeoutRef.current) clearTimeout(nextSceneTimeoutRef.current);
+    stopAudio();
     setProgress(0);
     setCurrentSceneIndex((prev) => (prev + 1) % SCENES.length);
   };
 
   const handlePrev = () => {
     if (nextSceneTimeoutRef.current) clearTimeout(nextSceneTimeoutRef.current);
-    if (typeof window !== "undefined" && "speechSynthesis" in window) {
-      window.speechSynthesis.cancel();
-    }
+    stopAudio();
     setProgress(0);
     setCurrentSceneIndex((prev) => (prev - 1 + SCENES.length) % SCENES.length);
   };
 
-  // Natural Telugu voice speaking with guaranteed completion & automatic start
+  // Natural Telugu voice speaking with sentence queueing (guarantees 100% full content playback without cutoffs)
   const speakText = (text: string) => {
     if (typeof window === "undefined" || !("speechSynthesis" in window)) return;
     try {
@@ -141,11 +144,13 @@ export default function SimpleDemoPage() {
         window.speechSynthesis.resume();
       }
 
-      const utterance = new SpeechSynthesisUtterance(text);
-      utterance.lang = "te-IN";
-      utterance.rate = 0.85;
-      utterance.pitch = 1.0;
-      utterance.volume = 1.0;
+      // Split into distinct clean sentences so Chrome never times out or aborts mid-speech
+      const sentences = text
+        .split(/(?<=[.!?।])\s+|\n+/)
+        .map((s) => s.trim())
+        .filter((s) => s.length > 0);
+
+      if (sentences.length === 0) return;
 
       const voices = window.speechSynthesis.getVoices();
       const teluguVoice =
@@ -155,34 +160,52 @@ export default function SimpleDemoPage() {
         voices.find((v) => v.lang.startsWith("hi")) ||
         voices[0];
 
-      if (teluguVoice) utterance.voice = teluguVoice;
+      setIsSpeaking(true);
+      setAudioUnlocked(true);
 
-      utterance.onstart = () => {
-        setIsSpeaking(true);
-        setAudioUnlocked(true);
-      };
+      sentences.forEach((sentence, idx) => {
+        const utterance = new SpeechSynthesisUtterance(sentence);
+        utterance.lang = "te-IN";
+        utterance.rate = 0.83;
+        utterance.pitch = 1.0;
+        utterance.volume = 1.0;
 
-      // When the audio completely finishes speaking without any cutoff:
-      utterance.onend = () => {
-        setIsSpeaking(false);
-        if (isPlayingRef.current) {
-          // Pause for 2 seconds so the completed action can be seen clearly
-          nextSceneTimeoutRef.current = setTimeout(() => {
-            handleNext();
-          }, 2000);
+        if (teluguVoice) {
+          utterance.voice = teluguVoice;
         }
-      };
 
-      utterance.onerror = () => {
-        setIsSpeaking(false);
-        if (isPlayingRef.current) {
-          nextSceneTimeoutRef.current = setTimeout(() => {
-            handleNext();
-          }, 3000);
+        if (idx === 0) {
+          utterance.onstart = () => {
+            setIsSpeaking(true);
+            setAudioUnlocked(true);
+          };
         }
-      };
 
-      window.speechSynthesis.speak(utterance);
+        // Only on the very last sentence end do we transition to the next step
+        if (idx === sentences.length - 1) {
+          utterance.onend = () => {
+            setIsSpeaking(false);
+            if (isPlayingRef.current) {
+              // Pause for 2 seconds after the full audio finishes
+              nextSceneTimeoutRef.current = setTimeout(() => {
+                handleNext();
+              }, 2000);
+            }
+          };
+
+          utterance.onerror = (e) => {
+            console.warn("Speech synthesis error on last sentence:", e);
+            setIsSpeaking(false);
+            if (isPlayingRef.current) {
+              nextSceneTimeoutRef.current = setTimeout(() => {
+                handleNext();
+              }, 2500);
+            }
+          };
+        }
+
+        window.speechSynthesis.speak(utterance);
+      });
     } catch (e) {
       console.warn("Speech synthesis error:", e);
     }
@@ -192,7 +215,6 @@ export default function SimpleDemoPage() {
   useEffect(() => {
     if (typeof window === "undefined" || !("speechSynthesis" in window)) return;
 
-    // Load voices
     window.speechSynthesis.getVoices();
     const handleVoicesChanged = () => {
       window.speechSynthesis.getVoices();
@@ -208,8 +230,9 @@ export default function SimpleDemoPage() {
         if (window.speechSynthesis.paused) {
           window.speechSynthesis.resume();
         }
-        // Try audio context silent unlock
-        const AudioCtx = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+        const AudioCtx =
+          window.AudioContext ||
+          (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
         if (AudioCtx) {
           const ctx = new AudioCtx();
           if (ctx.state === "suspended") {
@@ -223,7 +246,6 @@ export default function SimpleDemoPage() {
       } catch (e) { }
     };
 
-    // Listen to every possible user event on the window to unlock speech immediately
     const eventTypes = ["pointerdown", "touchstart", "touchend", "click", "keydown", "scroll", "mousemove"];
     eventTypes.forEach((evt) => {
       window.addEventListener(evt, autoUnlockAndPlay, { passive: true, once: true });
@@ -236,17 +258,11 @@ export default function SimpleDemoPage() {
       }
     }, 150);
 
-    const timer2 = setTimeout(() => {
-      if (isPlayingRef.current && !window.speechSynthesis.speaking) {
-        speakText(sceneRef.current.teluguVoice);
-      }
-    }, 600);
-
     return () => {
       clearTimeout(timer1);
-      clearTimeout(timer2);
       if (nextSceneTimeoutRef.current) clearTimeout(nextSceneTimeoutRef.current);
       window.speechSynthesis.removeEventListener("voiceschanged", handleVoicesChanged);
+      stopAudio();
       eventTypes.forEach((evt) => {
         window.removeEventListener(evt, autoUnlockAndPlay);
       });
@@ -330,6 +346,18 @@ export default function SimpleDemoPage() {
           </div>
 
           <div className="header-actions">
+            <button
+              type="button"
+              className={`header-listen-voice-btn ${isSpeaking ? "speaking" : ""}`}
+              onClick={() => {
+                speakText(scene.teluguVoice);
+              }}
+              title="వాయిస్ వినండి"
+            >
+              <VolumeUpFill size={18} />
+              <span>{isSpeaking ? "వాయిస్ వస్తోంది..." : "వాయిస్ వినండి 🔊"}</span>
+            </button>
+
             <Link href="/" className="open-app-btn">
               🚜 యాప్ ఓపెన్ చేయండి →
             </Link>
@@ -847,6 +875,37 @@ export default function SimpleDemoPage() {
           display: flex;
           align-items: center;
           gap: 10px;
+          flex-wrap: wrap;
+        }
+
+        .header-listen-voice-btn {
+          background: rgba(255, 255, 255, 0.2);
+          color: #ffffff;
+          border: 1.5px solid rgba(255, 255, 255, 0.4);
+          padding: 8px 16px;
+          border-radius: 12px;
+          font-size: 13px;
+          font-weight: 800;
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          cursor: pointer;
+          transition: all 0.2s ease;
+          box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+        }
+
+        .header-listen-voice-btn:hover {
+          background: #ffffff;
+          color: #15803d;
+          transform: translateY(-1px);
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        }
+
+        .header-listen-voice-btn.speaking {
+          background: #ffffff;
+          color: #15803d;
+          border-color: #86efac;
+          box-shadow: 0 0 14px rgba(255, 255, 255, 0.8);
         }
 
         .open-app-btn {
