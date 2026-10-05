@@ -102,8 +102,9 @@ export default function SimpleDemoPage() {
   const [simulatedTypingProgress, setSimulatedTypingProgress] = useState(0);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [audioUnlocked, setAudioUnlocked] = useState(false);
+  const [displayMode, setDisplayMode] = useState<"split" | "mobile-only">("split");
 
-  // In-Browser Screen Recorder for Instagram
+  // In-Browser Screen Recorder for Instagram & WhatsApp
   const [isRecording, setIsRecording] = useState(false);
   const [recordingSeconds, setRecordingSeconds] = useState(0);
   const [downloadedVideoUrl, setDownloadedVideoUrl] = useState<string | null>(null);
@@ -444,15 +445,35 @@ export default function SimpleDemoPage() {
           </div>
 
           <div className="header-actions">
+            {/* Mode Switcher: Mobile Only vs Split View */}
+            <div className="view-mode-toggle-group">
+              <button
+                type="button"
+                className={`mode-toggle-btn ${displayMode === "split" ? "active" : ""}`}
+                onClick={() => setDisplayMode("split")}
+                title="పూర్తి వివరణ మరియు స్క్రీన్"
+              >
+                🖥️ పూర్తి వ్యూ
+              </button>
+              <button
+                type="button"
+                className={`mode-toggle-btn ${displayMode === "mobile-only" ? "active" : ""}`}
+                onClick={() => setDisplayMode("mobile-only")}
+                title="కేవలం మొబైల్ స్క్రీన్ మాత్రమే (WhatsApp/Instagram Reel Mode)"
+              >
+                📱 కేవలం మొబైల్ మాత్రమే
+              </button>
+            </div>
+
             {/* Instagram Video Recorder Button */}
             {!isRecording ? (
               <button
                 type="button"
                 className="record-video-btn"
                 onClick={startRecording}
-                title="Instagram / Social media video record and download"
+                title="Instagram / WhatsApp video record and download"
               >
-                🔴 Instagram వీడియో రికార్డ్
+                🔴 వీడియో రికార్డ్ & డౌన్‌లోడ్
               </button>
             ) : (
               <button
@@ -461,7 +482,7 @@ export default function SimpleDemoPage() {
                 onClick={stopRecording}
                 title="Stop recording and download video"
               >
-                ⏹️ రికార్డింగ్ ఆపండి & డౌన్‌లోడ్ ({recordingSeconds}s)
+                ⏹️ రికార్డింగ్ ఆపండి ({recordingSeconds}s)
               </button>
             )}
 
@@ -482,7 +503,7 @@ export default function SimpleDemoPage() {
       </header>
 
       {/* Main Content Area */}
-      <main className="farmer-main-content">
+      <main className={`farmer-main-content ${displayMode === "mobile-only" ? "mobile-only-active" : ""}`}>
         {/* Step Buttons (5 Steps) */}
         <div className="step-tabs-container">
           {SCENES.map((s, idx) => (
@@ -502,7 +523,7 @@ export default function SimpleDemoPage() {
           ))}
         </div>
 
-        <div className="demo-showcase-layout">
+        <div className={`demo-showcase-layout ${displayMode === "mobile-only" ? "center-mobile-layout" : ""}`}>
           {/* Left: Big Phone Screen Display */}
           <div className="phone-display-wrapper">
             <div className="phone-mockup-frame">
@@ -511,13 +532,7 @@ export default function SimpleDemoPage() {
                 <span className="camera-circle" />
               </div>
 
-              {/* Action Banner On Phone */}
-              <div className="phone-action-pill">
-                <span className="green-pulse-dot" />
-                <span>{scene.highlightText}</span>
-              </div>
-
-              {/* Real App Screen Body */}
+              {/* Real App Screen Body (Top bar is cleanly visible without overlap) */}
               <div className="phone-screen-content">
                 {/* ---------------- SCENE 1: LOGIN SCREEN ---------------- */}
                 {scene.id === 1 && (
@@ -869,10 +884,51 @@ export default function SimpleDemoPage() {
                   </div>
                 )}
               </div>
+
+              {/* Live Action Pill at bottom of phone - does NOT overlap top header */}
+              <div className="phone-action-pill-bottom">
+                <span className="green-pulse-dot" />
+                <span>{scene.highlightText}</span>
+              </div>
             </div>
+
+            {/* Mobile Only Mode Floating Controls */}
+            {displayMode === "mobile-only" && (
+              <div className="mobile-only-quick-controls">
+                <div className="video-player-buttons-row">
+                  <button type="button" className="btn-prev-step" onClick={handlePrev}>
+                    <ArrowLeft size={18} />
+                  </button>
+                  <button type="button" className="btn-main-play-pause" onClick={() => setIsPlaying(!isPlaying)}>
+                    {isPlaying ? <PauseFill size={22} /> : <PlayFill size={22} />}
+                    <span>{isPlaying ? "పాజ్" : "ప్లే"}</span>
+                  </button>
+                  <button type="button" className="btn-next-step" onClick={handleNext}>
+                    <ArrowRight size={18} />
+                  </button>
+                </div>
+
+                <div className="mobile-only-action-row">
+                  {!isRecording ? (
+                    <button type="button" className="btn-mobile-record" onClick={startRecording}>
+                      🔴 వీడియో రికార్డ్
+                    </button>
+                  ) : (
+                    <button type="button" className="btn-mobile-record recording animate-pulse" onClick={stopRecording}>
+                      ⏹️ ఆపి డౌన్‌లోడ్ ({recordingSeconds}s)
+                    </button>
+                  )}
+
+                  <button type="button" className="btn-mobile-whatsapp" onClick={shareVideoOnWhatsApp}>
+                    <Whatsapp size={18} /> షేర్
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
 
-          {/* Right: Farmer Friendly Explanation & Playback */}
+          {/* Right: Farmer Friendly Explanation & Playback (Hidden in Mobile-Only mode) */}
+          {displayMode === "split" && (
           <div className="farmer-control-card">
             <div className="card-badge-row">
               <span className="step-tag-pill">{scene.stepNumber}</span>
@@ -995,8 +1051,15 @@ export default function SimpleDemoPage() {
                 <Whatsapp size={22} />
                 <span>📲 WhatsApp లో వీడియో & డెమో షేర్ చేయండి</span>
               </button>
+
+              <div className="whatsapp-video-instructions-pill">
+                <small>
+                  💡 <b>WhatsApp లో పూర్తి వీడియో పంపడానికి:</b> పైనున్న <b>"🔴 వీడియో రికార్డ్ & డౌన్‌లోడ్"</b> నొక్కి వీడియోను డౌన్‌లోడ్ చేసుకోండి. ఆ తర్వాత WhatsApp లో <b>Attach (📎)</b> లేదా <b>Gallery</b> నుండి ఆ వీడియోను నేరుగా రైతులకు పంపవచ్చు!
+                </small>
+              </div>
             </div>
           </div>
+          )}
         </div>
       </main>
 
@@ -1156,12 +1219,46 @@ export default function SimpleDemoPage() {
           text-align: center;
         }
 
+        .view-mode-toggle-group {
+          display: flex;
+          background: rgba(255, 255, 255, 0.15);
+          padding: 2px;
+          border-radius: 8px;
+          border: 1px solid rgba(255, 255, 255, 0.25);
+        }
+
+        .mode-toggle-btn {
+          background: transparent;
+          border: none;
+          color: #e2e8f0;
+          font-size: 12px;
+          font-weight: 700;
+          padding: 6px 10px;
+          border-radius: 6px;
+          cursor: pointer;
+          transition: all 0.2s;
+        }
+
+        .mode-toggle-btn.active {
+          background: #ffffff;
+          color: #15803d;
+          font-weight: 800;
+          box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+        }
+
         /* Showcase Grid */
         .demo-showcase-layout {
           display: grid;
           grid-template-columns: 390px 1fr;
           gap: 32px;
           align-items: flex-start;
+        }
+
+        .demo-showcase-layout.center-mobile-layout {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
         }
 
         @media (max-width: 900px) {
@@ -1173,7 +1270,9 @@ export default function SimpleDemoPage() {
         /* Phone Mockup */
         .phone-display-wrapper {
           display: flex;
-          justify-content: center;
+          flex-direction: column;
+          align-items: center;
+          gap: 16px;
         }
 
         .phone-mockup-frame {
@@ -1189,9 +1288,15 @@ export default function SimpleDemoPage() {
           flex-direction: column;
         }
 
+        .center-mobile-layout .phone-mockup-frame {
+          width: 410px;
+          height: 780px;
+          box-shadow: 0 25px 60px rgba(0, 0, 0, 0.35);
+        }
+
         .phone-top-notch {
           width: 120px;
-          height: 22px;
+          height: 20px;
           background: #1e293b;
           border-radius: 0 0 14px 14px;
           margin: 0 auto;
@@ -1212,22 +1317,24 @@ export default function SimpleDemoPage() {
           border-radius: 50%;
         }
 
-        .phone-action-pill {
+        .phone-action-pill-bottom {
           position: absolute;
-          top: 30px;
-          left: 14px;
-          right: 14px;
-          background: rgba(15, 23, 42, 0.9);
+          bottom: 48px;
+          left: 12px;
+          right: 12px;
+          background: rgba(15, 23, 42, 0.94);
+          backdrop-filter: blur(8px);
           color: #f8fafc;
-          padding: 6px 12px;
+          padding: 8px 12px;
           border-radius: 20px;
           font-size: 11px;
           font-weight: 700;
-          z-index: 40;
+          z-index: 45;
           display: flex;
           align-items: center;
           gap: 8px;
-          box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+          border: 1px solid rgba(255, 255, 255, 0.15);
         }
 
         .green-pulse-dot {
@@ -1250,8 +1357,60 @@ export default function SimpleDemoPage() {
           flex-direction: column;
           position: relative;
           background: #f8fafc;
-          padding-top: 32px;
+          padding-top: 20px;
           overflow: hidden;
+        }
+
+        /* Mobile Only Quick Controls */
+        .mobile-only-quick-controls {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: 10px;
+          background: #ffffff;
+          padding: 12px 20px;
+          border-radius: 16px;
+          border: 1px solid #e2e8f0;
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+          width: 100%;
+          max-width: 410px;
+        }
+
+        .mobile-only-action-row {
+          display: flex;
+          gap: 10px;
+          width: 100%;
+        }
+
+        .btn-mobile-record {
+          flex: 1;
+          background: #ef4444;
+          color: #ffffff;
+          border: none;
+          padding: 10px 14px;
+          border-radius: 10px;
+          font-weight: 800;
+          font-size: 13px;
+          cursor: pointer;
+        }
+
+        .btn-mobile-record.recording {
+          background: #b91c1c;
+          border: 2px solid #ffffff;
+        }
+
+        .btn-mobile-whatsapp {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          background: #25d366;
+          color: #ffffff;
+          border: none;
+          padding: 10px 16px;
+          border-radius: 10px;
+          font-weight: 800;
+          font-size: 13px;
+          cursor: pointer;
         }
 
         .app-screen-layer {
@@ -2158,6 +2317,19 @@ export default function SimpleDemoPage() {
           font-size: 15px;
           text-decoration: none;
           box-shadow: 0 4px 14px rgba(37, 211, 102, 0.35);
+          width: 100%;
+          border: none;
+          cursor: pointer;
+        }
+
+        .whatsapp-video-instructions-pill {
+          margin-top: 8px;
+          background: #f0fdf4;
+          border: 1px solid #bbf7d0;
+          padding: 8px 12px;
+          border-radius: 8px;
+          color: #166534;
+          line-height: 1.4;
         }
 
         /* Instagram Recorder Box */
