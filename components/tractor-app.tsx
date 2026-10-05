@@ -243,6 +243,10 @@ function EmptyState({ title, text }: {
 }
 
 export default function TractorApp() {
+  const pathname = usePathname();
+  if (pathname?.startsWith("/demo")) {
+    return null;
+  }
   return <LanguageProvider><TractorAppContent /></LanguageProvider>;
 }
 
@@ -2984,6 +2988,22 @@ function SettingsView({
           </div>
           <ChevronRight size={18} />
         </button>
+
+        {/* Demo Video & WhatsApp Share */}
+        <Link
+          href="/demo"
+          className="settings-menu-item"
+          style={{ textDecoration: "none", color: "inherit" }}
+        >
+          <div className="menu-icon-wrap" style={{ background: "#dcfce7", color: "#15803d" }}>
+            <Whatsapp size={20} />
+          </div>
+          <div className="menu-text">
+            <span>🎥 యాప్ డెమో వీడియో & WhatsApp షేర్</span>
+            <small>వీడియో రికార్డ్ చేసి WhatsApp లో షేర్ చేయండి</small>
+          </div>
+          <ChevronRight size={18} />
+        </Link>
 
         {/* Logout (Red) */}
         <button
