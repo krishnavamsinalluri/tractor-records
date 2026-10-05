@@ -19,8 +19,9 @@ function isLocalOrigin(origin: string): boolean {
 
 export const hasSupabaseConfig = Boolean(
   process.env.NEXT_PUBLIC_SUPABASE_URL &&
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
 );
+
 
 export function getPasswordRecoveryRedirectUrl(): string {
   const runtimeOrigin = typeof window === "undefined" ? null : validOrigin(window.location.origin);
