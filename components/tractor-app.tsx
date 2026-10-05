@@ -302,12 +302,12 @@ function TractorAppContent() {
               : customerPaymentRoute ? "customer-payment"
                 : customerShareRoute ? "share-all"
                   : customerEditRoute ? "edit-customer"
-                  : pathname === "/work-types" ? "work-types"
-                    : pathname === "/work-types/new" ? "add-work-type"
-                      : workTypeEditRoute ? "edit-work-type"
-                        : pathname === "/profile" ? "profile"
-                          : pathname === "/profile/password" ? "profile-password"
-                          : null;
+                    : pathname === "/work-types" ? "work-types"
+                      : pathname === "/work-types/new" ? "add-work-type"
+                        : workTypeEditRoute ? "edit-work-type"
+                          : pathname === "/profile" ? "profile"
+                            : pathname === "/profile/password" ? "profile-password"
+                              : null;
   const dialogWorkId = (workRoute?.[2] ? workRoute[1] : undefined) ?? savedWorkRoute?.[1] ?? paymentRoute?.[1];
   const workTypeId = workTypeEditRoute?.[1];
   const dialogWork = works.find((work) => work.id === dialogWorkId) ??
@@ -535,17 +535,17 @@ function TractorAppContent() {
             <LanguageToggle compact />
           </>
         ) : <>
-        <div className="brand">
-          <span className="brand-mark"><Image className="brand-logo-image" src="/images/logo.png" alt="" width={36} height={36} /></span>
-          <div className="brand-text">
-            <strong>{t("appName")}</strong>
-            <small>{currentUserName ? `${t("greeting")}, ${currentUserName}` : t("greeting")}</small>
+          <div className="brand">
+            <span className="brand-mark"><Image className="brand-logo-image" src="/images/logo.png" alt="" width={36} height={36} /></span>
+            <div className="brand-text">
+              <strong>{t("appName")}</strong>
+              <small>{currentUserName ? `${t("greeting")}, ${currentUserName}` : t("greeting")}</small>
+            </div>
           </div>
-        </div>
-        <div className="topbar-actions">
-          <LanguageToggle compact />
-          <IconButton icon={BoxArrowRight} label={t("signOut")} onClick={() => void signOut()} />
-        </div>
+          <div className="topbar-actions">
+            <LanguageToggle compact />
+            <IconButton icon={BoxArrowRight} label={t("signOut")} onClick={() => void signOut()} />
+          </div>
         </>}
       </header>
 
@@ -654,68 +654,68 @@ function TractorAppContent() {
             {dialogWorkId && !dialogWork && loading && <div className="loading-line" role="status">{t("loading")}</div>}
           </WorkflowPage>
         ) : <>
-        {isCustomerDetail && selectedCustomer ? (
-          <CustomerDetail
-            customer={selectedCustomer}
-            works={works.filter((work) => work.customer_id === selectedCustomer.id)}
-            workTypes={workTypes}
-            filter={customerFilters[selectedCustomer.id] ?? "all"}
-            onFilterChange={(filter) => setCustomerFilters((current) => ({ ...current, [selectedCustomer.id]: filter }))}
-            onBack={goBackFromCustomer}
-            onAddWork={() => openNewWork(selectedCustomer.id)}
-            onEditCustomer={() => openDialog("edit-customer", selectedCustomer.id)}
-            onEdit={openEditWork}
-            onShare={openShareWork}
-            onAddPayment={(work) => openDialog("add-payment", work.id)}
-            onAddCustomerPayment={() => openDialog("customer-payment")}
-            onShareAll={() => openDialog("share-all")}
-          />
-        ) : isCustomerDetail ? (
-          loading ? (
-            <div className="center-screen"><div className="spinner" /><p>{t("loading")}</p></div>
+          {isCustomerDetail && selectedCustomer ? (
+            <CustomerDetail
+              customer={selectedCustomer}
+              works={works.filter((work) => work.customer_id === selectedCustomer.id)}
+              workTypes={workTypes}
+              filter={customerFilters[selectedCustomer.id] ?? "all"}
+              onFilterChange={(filter) => setCustomerFilters((current) => ({ ...current, [selectedCustomer.id]: filter }))}
+              onBack={goBackFromCustomer}
+              onAddWork={() => openNewWork(selectedCustomer.id)}
+              onEditCustomer={() => openDialog("edit-customer", selectedCustomer.id)}
+              onEdit={openEditWork}
+              onShare={openShareWork}
+              onAddPayment={(work) => openDialog("add-payment", work.id)}
+              onAddCustomerPayment={() => openDialog("customer-payment")}
+              onShareAll={() => openDialog("share-all")}
+            />
+          ) : isCustomerDetail ? (
+            loading ? (
+              <div className="center-screen"><div className="spinner" /><p>{t("loading")}</p></div>
+            ) : (
+              <>
+                <button className="back-button" onClick={goBackFromCustomer}>
+                  <ArrowLeft size={20} /> {t("back")}
+                </button>
+                <EmptyState title={t("noFarmers")} text={t("noFarmersHelp")} />
+              </>
+            )
+          ) : view === "dashboard" ? (
+            <Dashboard
+              customers={customers}
+              works={works}
+              total={totals.total}
+              received={totals.received}
+              loading={loading}
+              onAdd={() => openNewWork()}
+              onOpenCustomer={openCustomer}
+              onViewAllDues={() => router.push("/pending")}
+            />
+          ) : view === "customers" ? (
+            <Customers
+              customers={customers}
+              works={works}
+              query={customerQuery}
+              onQueryChange={setCustomerQuery}
+              onSelect={openCustomer}
+              onAddNewCustomer={() => openDialog("add-customer")}
+            />
+          ) : view === "pending" ? (
+            <PendingDuesView
+              customers={customers}
+              works={works}
+              onSelect={openCustomer}
+            />
           ) : (
-            <>
-              <button className="back-button" onClick={goBackFromCustomer}>
-                <ArrowLeft size={20} /> {t("back")}
-              </button>
-              <EmptyState title={t("noFarmers")} text={t("noFarmersHelp")} />
-            </>
-          )
-        ) : view === "dashboard" ? (
-          <Dashboard
-            customers={customers}
-            works={works}
-            total={totals.total}
-            received={totals.received}
-            loading={loading}
-            onAdd={() => openNewWork()}
-            onOpenCustomer={openCustomer}
-            onViewAllDues={() => router.push("/pending")}
-          />
-        ) : view === "customers" ? (
-          <Customers
-            customers={customers}
-            works={works}
-            query={customerQuery}
-            onQueryChange={setCustomerQuery}
-            onSelect={openCustomer}
-            onAddNewCustomer={() => openDialog("add-customer")}
-          />
-        ) : view === "pending" ? (
-          <PendingDuesView
-            customers={customers}
-            works={works}
-            onSelect={openCustomer}
-          />
-        ) : (
-          <SettingsView
-            session={session}
-            workTypes={workTypes}
-            onSignOut={() => void signOut()}
-            onOpenWorkTypes={() => openDialog("work-types")}
-            onChangePassword={() => router.push(workflowUrl("/profile/password"), { scroll: false })}
-          />
-        )}
+            <SettingsView
+              session={session}
+              workTypes={workTypes}
+              onSignOut={() => void signOut()}
+              onOpenWorkTypes={() => openDialog("work-types")}
+              onChangePassword={() => router.push(workflowUrl("/profile/password"), { scroll: false })}
+            />
+          )}
         </>}
       </main>
 
@@ -2628,9 +2628,9 @@ function NewCustomerModal({
     setBusy(true);
     setError("");
     const values = {
-        user_id: userId,
-        name: name.trim(),
-        phone: phone.trim() || null,
+      user_id: userId,
+      name: name.trim(),
+      phone: phone.trim() || null,
     };
     const request = customer
       ? getSupabase().from("customers").update(values).eq("id", customer.id)
@@ -2735,8 +2735,8 @@ function WorkTypeSettings({
       </div>
 
       <button type="button" className="add-type-btn" onClick={onAdd}>
-          <PlusLg size={18} />
-          <span>{t("addWorkType")}</span>
+        <PlusLg size={18} />
+        <span>{t("addWorkType")}</span>
       </button>
     </div>
   );
@@ -2859,46 +2859,46 @@ function WorkTypeForm({
   return (
     <form className="workflow-form" onSubmit={submit}>
       <fieldset className="work-type-form-fields" disabled={busy || saved}>
-      <label className="input-group">
-        <FieldLabel label={t("workTypeName")} />
-        <input value={name} onChange={(event) => setName(event.target.value)} required autoFocus />
-      </label>
-      <div className="input-group work-type-image-field">
-        <label htmlFor="work-type-image"><FieldLabel label={t("workTypeImage")} /></label>
-        <small id="work-type-image-help">{t("workTypeImageHelp")}</small>
-        <input ref={imageInput} id="work-type-image" type="file" accept={WORK_TYPE_IMAGE_ACCEPT}
-          aria-describedby="work-type-image-help" onChange={(event) => selectImage(event.target.files?.[0])} />
-        <div className="work-type-image-preview">
-          <WorkTypeThumbnail workType={{ name, image_path: removeImage ? null : workType?.image_path ?? null }}
-            previewUrl={imageFile ? previewUrl : undefined} size={80} />
-          {(imageFile || (!removeImage && workType?.image_path)) && (
-            <div className="work-type-image-actions">
-              <button type="button" className="text-button" onClick={() => imageInput.current?.click()}>{t("changeWorkTypeImage")}</button>
-              <button type="button" className="text-button" onClick={() => {
-                setImageFile(null);
-                setPreviewUrl(undefined);
-                setRemoveImage(Boolean(workType?.image_path));
-                setError("");
-                if (imageInput.current) imageInput.current.value = "";
-              }}>{t("removeWorkTypeImage")}</button>
-            </div>
-          )}
+        <label className="input-group">
+          <FieldLabel label={t("workTypeName")} />
+          <input value={name} onChange={(event) => setName(event.target.value)} required autoFocus />
+        </label>
+        <div className="input-group work-type-image-field">
+          <label htmlFor="work-type-image"><FieldLabel label={t("workTypeImage")} /></label>
+          <small id="work-type-image-help">{t("workTypeImageHelp")}</small>
+          <input ref={imageInput} id="work-type-image" type="file" accept={WORK_TYPE_IMAGE_ACCEPT}
+            aria-describedby="work-type-image-help" onChange={(event) => selectImage(event.target.files?.[0])} />
+          <div className="work-type-image-preview">
+            <WorkTypeThumbnail workType={{ name, image_path: removeImage ? null : workType?.image_path ?? null }}
+              previewUrl={imageFile ? previewUrl : undefined} size={80} />
+            {(imageFile || (!removeImage && workType?.image_path)) && (
+              <div className="work-type-image-actions">
+                <button type="button" className="text-button" onClick={() => imageInput.current?.click()}>{t("changeWorkTypeImage")}</button>
+                <button type="button" className="text-button" onClick={() => {
+                  setImageFile(null);
+                  setPreviewUrl(undefined);
+                  setRemoveImage(Boolean(workType?.image_path));
+                  setError("");
+                  if (imageInput.current) imageInput.current.value = "";
+                }}>{t("removeWorkTypeImage")}</button>
+              </div>
+            )}
+          </div>
         </div>
-      </div>
-      <div className="workflow-rate-fields">
-        <label className="input-group">
-          <FieldLabel label={t("acreRate")} />
-          <div className="currency-input-wrap"><span>₹</span><input type="number" min="0" step="0.01" inputMode="decimal" value={acreRate} onChange={(event) => setAcreRate(event.target.value)} placeholder={t("configuredRateMissing")} /></div>
+        <div className="workflow-rate-fields">
+          <label className="input-group">
+            <FieldLabel label={t("acreRate")} />
+            <div className="currency-input-wrap"><span>₹</span><input type="number" min="0" step="0.01" inputMode="decimal" value={acreRate} onChange={(event) => setAcreRate(event.target.value)} placeholder={t("configuredRateMissing")} /></div>
+          </label>
+          <label className="input-group">
+            <FieldLabel label={t("hourRate")} />
+            <div className="currency-input-wrap"><span>₹</span><input type="number" min="0" step="0.01" inputMode="decimal" value={hourRate} onChange={(event) => setHourRate(event.target.value)} placeholder={t("configuredRateMissing")} /></div>
+          </label>
+        </div>
+        <label className="workflow-active-toggle">
+          <span>{t("availableInForm")}</span>
+          <input type="checkbox" checked={active} onChange={(event) => setActive(event.target.checked)} />
         </label>
-        <label className="input-group">
-          <FieldLabel label={t("hourRate")} />
-          <div className="currency-input-wrap"><span>₹</span><input type="number" min="0" step="0.01" inputMode="decimal" value={hourRate} onChange={(event) => setHourRate(event.target.value)} placeholder={t("configuredRateMissing")} /></div>
-        </label>
-      </div>
-      <label className="workflow-active-toggle">
-        <span>{t("availableInForm")}</span>
-        <input type="checkbox" checked={active} onChange={(event) => setActive(event.target.checked)} />
-      </label>
       </fieldset>
       {error && <p className="form-error" role="alert">{error}</p>}
       <button type="submit" className="save-work-submit-btn" disabled={busy}>{busy ? t("saving") : t("save")}</button>
@@ -2988,22 +2988,6 @@ function SettingsView({
           </div>
           <ChevronRight size={18} />
         </button>
-
-        {/* Demo Video & WhatsApp Share */}
-        <Link
-          href="/demo"
-          className="settings-menu-item"
-          style={{ textDecoration: "none", color: "inherit" }}
-        >
-          <div className="menu-icon-wrap" style={{ background: "#dcfce7", color: "#15803d" }}>
-            <Whatsapp size={20} />
-          </div>
-          <div className="menu-text">
-            <span>🎥 యాప్ డెమో వీడియో & WhatsApp షేర్</span>
-            <small>వీడియో రికార్డ్ చేసి WhatsApp లో షేర్ చేయండి</small>
-          </div>
-          <ChevronRight size={18} />
-        </Link>
 
         {/* Logout (Red) */}
         <button

@@ -13,8 +13,6 @@ import {
   HouseDoorFill,
   PeopleFill,
   GearFill,
-  VolumeUpFill,
-  VolumeMuteFill,
   LockFill,
   EnvelopeFill,
   PersonFill,
@@ -40,57 +38,57 @@ const SCENES: Scene[] = [
   {
     id: 1,
     stepNumber: "స్టెప్ 1",
-    stepName: "లాగిన్ అవ్వడం",
+    stepName: "యాప్‌లోకి వెళ్లడం",
     teluguVoice:
-      "రైతు సోదరులారా! మన ట్రాక్టర్ లెక్కల యాప్‌లో మీ ఈమెయిల్ మరియు పాస్‌వర్డ్ నమోదు చేసి సులువుగా లాగిన్ అవ్వండి.",
+      "అన్నలారా, నమస్కారం! మన ట్రాక్టర్ లెక్కల యాప్‌లోకి వెళ్లడానికి ముందుగా మీ ఈమెయిల్, పాస్‌వర్డ్ నమోదు చేసి, లోపలికి వెళ్లండి. వెంటనే మీ ఖాతా తెరుచుకుంటుంది.",
     simpleExplanation:
-      "మీ ఈమెయిల్ మరియు పాస్‌వర్డ్ కొట్టి 'లాగిన్' బటన్ నొక్కగానే మీ ఖాతా ఓపెన్ అవుతుంది.",
+      "మీ ఈమెయిల్, పాస్‌వర్డ్ కొట్టి లాగిన్ అవ్వగానే మీ ఖాతా తెరుచుకుంటుంది.",
     highlightText: "ఈమెయిల్: hemasai87@gmail.com తో లాగిన్ అవుతున్నారు",
-    duration: 9,
+    duration: 10,
   },
   {
     id: 2,
     stepNumber: "స్టెప్ 2",
-    stepName: "హోమ్ పేజీ & మొత్తం బాకీలు",
+    stepName: "రావాల్సిన బాకీ చూడడం",
     teluguVoice:
-      "హోమ్ పేజీలో మీకు రావాల్సిన మొత్తం బాకీ, రైతుల లిస్ట్ ఒకే చోట స్పష్టంగా కనిపిస్తుంది.",
+      "యాప్ తెరిచిన వెంటనే, రైతుల దగ్గర నుంచి మనకు ఎంత డబ్బు రావాలో ఇక్కడే చూడవచ్చు. ఏ రైతు దగ్గర ఎంత బాకీ ఉందో కూడా ఒక్క చూపులోనే తెలుస్తుంది. ఇక పుస్తకంలో లెక్కలు వెతకాల్సిన అవసరం లేదు.",
     simpleExplanation:
-      "ఎంతమంది రైతులు బాకీ ఉన్నారు, మొత్తం ఎంత డబ్బు రావాలి అనే లెక్క హోమ్ స్క్రీన్‌లోనే చూసుకోవచ్చు.",
+      "రైతుల దగ్గర నుంచి ఎంత డబ్బు రావాలో, ఎవరు ఎంత బాకీ ఉన్నారో ఇక్కడే చూసుకోవచ్చు.",
     highlightText: "మొత్తం రావాల్సిన బాకీ ₹32,000 కనిపిస్తోంది",
-    duration: 8,
+    duration: 12,
   },
   {
     id: 3,
     stepNumber: "స్టెప్ 3",
-    stepName: "కొత్త పని నమోదు & ఎకరాల లెక్క",
+    stepName: "కొత్త ట్రాక్టర్ పని నమోదు చేయడం",
     teluguVoice:
-      "రైతు పేరు ఎంచుకుని, కల్టివేటర్ లేదా రోటావేటర్ సెలెక్ట్ చేసి, ఎకరాలు ఇవ్వగానే ఆటోమేటిక్‌గా బిల్లు లెక్క కడుతుంది.",
+      "కొత్తగా చేసిన ట్రాక్టర్ పని లెక్కలో రాయాలంటే, ‘కొత్త పని’ మీద నొక్కండి. తర్వాత రైతు పేరును ఎంచుకోండి. చేసిన పని ఏదో ఎంచుకోండి — కల్టివేటర్ అయినా, రోటావేటర్ అయినా. ఎన్ని ఎకరాలు పని చేశారో నమోదు చేయండి. ముందుగా పెట్టిన రేటు ప్రకారం, మొత్తం ఎంత డబ్బు రావాలో యాప్ వెంటనే లెక్క కడుతుంది.",
     simpleExplanation:
-      "రమేష్ అనే రైతుకు 2 ఎకరాల కల్టివేటర్ పని ₹1,000 చొప్పున ₹2,000 ఆటోమేటిక్‌గా సేవ్ అవుతుంది.",
-    highlightText: "2 ఎకరాలు × ₹1,000 = ₹2,000 సేవ్ చేయబడింది",
-    duration: 9,
+      "రైతు పేరు, పని రకం, ఎకరాలు నమోదు చేయగానే మొత్తం బిల్లు ఆటోమేటిక్‌గా లెక్క కడుతుంది.",
+    highlightText: "కొత్త పని: 2 ఎకరాలు × ₹1,000 = ₹2,000 సేవ్ చేయబడింది",
+    duration: 16,
   },
   {
     id: 4,
     stepNumber: "స్టెప్ 4",
-    stepName: "WhatsApp లో రసీదు పంపడం",
+    stepName: "రైతుకు పని లెక్క పంపడం",
     teluguVoice:
-      "రైతు ఖాతా ఓపెన్ చేసి, వాట్సాప్ బటన్ నొక్కగానే పూర్తి బిల్లు మరియు PhonePe వివరాలు రైతు ఫోన్‌కి వెళ్లిపోతాయి.",
+      "పని లెక్క పూర్తయ్యాక, ఆ రైతు పేరుపై నొక్కండి. తర్వాత ‘వాట్సాప్’ మీద నొక్కితే చాలు. ఏ పని చేశారు, ఎన్ని ఎకరాలు చేశారు, మొత్తం ఎంత డబ్బు అయింది, ఇంకా ఎంత బాకీ ఉందో అన్నీ ఒక చక్కటి లెక్కలా రైతు ఫోన్‌కి పంపించవచ్చు. మీ ఫోన్‌పే నంబర్ కూడా అందులో ఉంటుంది. రైతుకు కూడా లెక్క స్పష్టంగా తెలుస్తుంది.",
     simpleExplanation:
-      "పని వివరాలు, బాకీ మొత్తం మరియు మీ PhonePe నంబర్‌తో కూడిన పక్కా రసీదు రైతు వాట్సాప్‌కి చేరుతుంది.",
+      "రైతు వాట్సాప్‌కి పని వివరాలు, బాకీ మరియు మీ ఫోన్‌పే నంబర్‌తో కూడిన లెక్క రసీదు వెళ్తుంది.",
     highlightText: "అన్నయ్య గారి వాట్సాప్‌కి రసీదు పంపబడింది",
-    duration: 9,
+    duration: 17,
   },
   {
     id: 5,
     stepNumber: "స్టెప్ 5",
-    stepName: "డబ్బు జమ & బాకీ క్లియర్",
+    stepName: "రైతు ఇచ్చిన డబ్బు లెక్కలో జమ చేయడం",
     teluguVoice:
-      "రైతు డబ్బు ఇవ్వగానే జమ చేయండి. బాకీ జీరో అయిపోయి మీ ట్రాక్టర్ లెక్కలు పక్కాగా ఉంటాయి!",
+      "రైతు డబ్బులు ఇచ్చిన వెంటనే, ఆ డబ్బును యాప్‌లో జమ చేయండి. ఇచ్చిన డబ్బు లెక్కలో చేరిపోతుంది. బాకీ మొత్తం కట్టేస్తే, ఆ రైతు పేరు దగ్గర బాకీ సున్నా అని కనిపిస్తుంది. ఇలా ప్రతి రైతు లెక్కను ఎప్పటికప్పుడు సులభంగా చూసుకోవచ్చు. పుస్తకంలో రాసుకున్న లెక్కలు మర్చిపోయే భయం లేదు. మన ట్రాక్టర్ పనుల లెక్కలన్నీ యాప్‌లోనే భద్రంగా ఉంటాయి.",
     simpleExplanation:
-      "రైతు ఇచ్చిన డబ్బు నమోదు చేయగానే పాత బాకీలన్నీ తీరిపోయి జీరో అయిపోతుంది.",
+      "రైతు ఇచ్చిన డబ్బు జమ చేయగానే బాకీ సున్నా అవుతుంది. లెక్కలన్నీ భద్రంగా ఉంటాయి.",
     highlightText: "₹20,000 జమ చేసి బాకీ ₹0 క్లియర్ అయింది",
-    duration: 9,
+    duration: 19,
   },
 ];
 
@@ -98,29 +96,20 @@ export default function SimpleDemoPage() {
   const [currentSceneIndex, setCurrentSceneIndex] = useState(0);
   const [isPlaying, setIsPlaying] = useState(true);
   const [progress, setProgress] = useState(0);
-  const [voiceEnabled, setVoiceEnabled] = useState(true);
   const [simulatedTypingProgress, setSimulatedTypingProgress] = useState(0);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [audioUnlocked, setAudioUnlocked] = useState(false);
-  const [displayMode, setDisplayMode] = useState<"split" | "mobile-only">("split");
-
-  // In-Browser Screen Recorder for Instagram & WhatsApp
-  const [isRecording, setIsRecording] = useState(false);
-  const [recordingSeconds, setRecordingSeconds] = useState(0);
-  const [downloadedVideoUrl, setDownloadedVideoUrl] = useState<string | null>(null);
-  const [recorderNotice, setRecorderNotice] = useState<string | null>(null);
-
-  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
-  const recordedChunksRef = useRef<Blob[]>([]);
-  const streamRef = useRef<MediaStream | null>(null);
-  const recordTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const nextSceneTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const isPlayingRef = useRef(isPlaying);
   isPlayingRef.current = isPlaying;
+  const isSpeakingRef = useRef(isSpeaking);
+  isSpeakingRef.current = isSpeaking;
 
   const scene = SCENES[currentSceneIndex];
+  const sceneRef = useRef(scene);
+  sceneRef.current = scene;
 
   const handleNext = () => {
     if (nextSceneTimeoutRef.current) clearTimeout(nextSceneTimeoutRef.current);
@@ -140,124 +129,7 @@ export default function SimpleDemoPage() {
     setCurrentSceneIndex((prev) => (prev - 1 + SCENES.length) % SCENES.length);
   };
 
-  // Start Video Recording for Instagram
-  const startRecording = async () => {
-    if (typeof window === "undefined" || !navigator.mediaDevices?.getDisplayMedia) {
-      alert("మీ బ్రౌజర్‌లో స్క్రీన్ రికార్డర్ సపోర్ట్ లేదు. దయచేసి Chrome లేదా Edge బ్రౌజర్ ఉపయోగించండి.");
-      return;
-    }
-
-    try {
-      setRecorderNotice("స్క్రీన్ సెలెక్ట్ చేయండి...");
-      const stream = await navigator.mediaDevices.getDisplayMedia({
-        video: { displaySurface: "browser" },
-        audio: true,
-      });
-
-      streamRef.current = stream;
-      recordedChunksRef.current = [];
-
-      const mimeType = MediaRecorder.isTypeSupported("video/webm;codecs=vp9,opus")
-        ? "video/webm;codecs=vp9,opus"
-        : MediaRecorder.isTypeSupported("video/mp4")
-        ? "video/mp4"
-        : "video/webm";
-
-      const mediaRecorder = new MediaRecorder(stream, { mimeType });
-      mediaRecorderRef.current = mediaRecorder;
-
-      mediaRecorder.ondataavailable = (event) => {
-        if (event.data && event.data.size > 0) {
-          recordedChunksRef.current.push(event.data);
-        }
-      };
-
-      mediaRecorder.onstop = () => {
-        const blob = new Blob(recordedChunksRef.current, { type: mimeType });
-        const videoUrl = URL.createObjectURL(blob);
-        setDownloadedVideoUrl(videoUrl);
-        setIsRecording(false);
-        setRecorderNotice("✅ వీడియో సిద్ధమైంది! ఆటోమేటిక్‌గా డౌన్‌లోడ్ అవుతోంది...");
-
-        // Auto trigger download
-        const a = document.createElement("a");
-        a.href = videoUrl;
-        a.download = `Tractor_Records_Demo_Instagram_${Date.now()}.${mimeType.includes("mp4") ? "mp4" : "webm"}`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-
-        if (streamRef.current) {
-          streamRef.current.getTracks().forEach((track) => track.stop());
-        }
-      };
-
-      stream.getVideoTracks()[0].onended = () => {
-        stopRecording();
-      };
-
-      mediaRecorder.start(250);
-      setIsRecording(true);
-      setRecordingSeconds(0);
-      setDownloadedVideoUrl(null);
-      setRecorderNotice("🔴 రికార్డింగ్ నడుస్తోంది... 5 స్టెప్పులు పూర్తయిన తర్వాత ఆటోమేటిక్‌గా డౌన్‌లోడ్ అవుతుంది.");
-
-      // Restart flow from Step 1 with audio
-      setCurrentSceneIndex(0);
-      setProgress(0);
-      setIsPlaying(true);
-      setVoiceEnabled(true);
-      speakText(SCENES[0].teluguVoice);
-
-      if (recordTimerRef.current) clearInterval(recordTimerRef.current);
-      recordTimerRef.current = setInterval(() => {
-        setRecordingSeconds((prev) => prev + 1);
-      }, 1000);
-    } catch (err) {
-      console.warn("Screen recording cancelled or failed:", err);
-      setIsRecording(false);
-      setRecorderNotice(null);
-    }
-  };
-
-  // Stop Recording and Download
-  const stopRecording = () => {
-    if (recordTimerRef.current) clearInterval(recordTimerRef.current);
-    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
-      mediaRecorderRef.current.stop();
-    }
-  };
-
-  // Smart WhatsApp Share: Shares recorded video file directly or demo link
-  const shareVideoOnWhatsApp = async () => {
-    const promoText =
-      "🚜 *ట్రాక్టర్ లెక్కలు (Tractor Records)* - మీ ట్రాక్టర్ పనుల లెక్కలు, ఎకరాల లెక్క, బాకీలు, వాట్సాప్ రసీదుల కోసం సరికొత్త యాప్!\n\nపూర్తి వీడియో మరియు డెమో చూడటానికి ఇక్కడ క్లిక్ చేయండి:\nhttps://tractor-records-xi.vercel.app/demo\n\nయాప్ లాగిన్ వివరాలు:\nఈమెయిల్: hemasai87@gmail.com\nపాస్‌వర్డ్: Sai@123";
-
-    if (recordedChunksRef.current.length > 0 && typeof navigator !== "undefined" && navigator.canShare) {
-      try {
-        const mimeType = recordedChunksRef.current[0]?.type || "video/mp4";
-        const isMp4 = mimeType.includes("mp4");
-        const blob = new Blob(recordedChunksRef.current, { type: mimeType });
-        const file = new File([blob], `Tractor_Records_Demo.${isMp4 ? "mp4" : "webm"}`, { type: mimeType });
-
-        if (navigator.canShare({ files: [file] })) {
-          await navigator.share({
-            files: [file],
-            title: "ట్రాక్టర్ లెక్కలు వీడియో డెమో",
-            text: promoText,
-          });
-          return;
-        }
-      } catch (e) {
-        console.log("Web share fallback:", e);
-      }
-    }
-
-    const whatsappUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(promoText)}`;
-    window.open(whatsappUrl, "_blank");
-  };
-
-  // Natural Telugu voice speaking with guaranteed completion
+  // Natural Telugu voice speaking with guaranteed completion & automatic start
   const speakText = (text: string) => {
     if (typeof window === "undefined" || !("speechSynthesis" in window)) return;
     try {
@@ -270,14 +142,16 @@ export default function SimpleDemoPage() {
       }
 
       const utterance = new SpeechSynthesisUtterance(text);
-      utterance.rate = 0.88;
+      utterance.lang = "te-IN";
+      utterance.rate = 0.85;
       utterance.pitch = 1.0;
       utterance.volume = 1.0;
 
       const voices = window.speechSynthesis.getVoices();
       const teluguVoice =
-        voices.find((v) => v.lang === "te-IN" || v.lang.startsWith("te")) ||
-        voices.find((v) => v.lang === "en-IN" || v.name.includes("India") || v.name.includes("Natural")) ||
+        voices.find((v) => v.lang === "te-IN" || v.lang === "te_IN" || v.lang.startsWith("te")) ||
+        voices.find((v) => v.name.toLowerCase().includes("telugu")) ||
+        voices.find((v) => v.lang === "en-IN" && (v.name.includes("India") || v.name.includes("Natural"))) ||
         voices.find((v) => v.lang.startsWith("hi")) ||
         voices[0];
 
@@ -294,12 +168,7 @@ export default function SimpleDemoPage() {
         if (isPlayingRef.current) {
           // Pause for 2 seconds so the completed action can be seen clearly
           nextSceneTimeoutRef.current = setTimeout(() => {
-            // If at the end of Scene 5 and recording, auto-stop recording
-            if (currentSceneIndex === SCENES.length - 1 && isRecording) {
-              stopRecording();
-            } else {
-              handleNext();
-            }
+            handleNext();
           }, 2000);
         }
       };
@@ -319,59 +188,79 @@ export default function SimpleDemoPage() {
     }
   };
 
-  // Preload voices & unlock browser audio autoplay
+  // Preload voices & automatic browser audio autoplay unlock
   useEffect(() => {
     if (typeof window === "undefined" || !("speechSynthesis" in window)) return;
 
+    // Load voices
     window.speechSynthesis.getVoices();
     const handleVoicesChanged = () => {
       window.speechSynthesis.getVoices();
-      if (voiceEnabled && isPlayingRef.current) {
-        speakText(scene.teluguVoice);
+      if (isPlayingRef.current && !window.speechSynthesis.speaking) {
+        speakText(sceneRef.current.teluguVoice);
       }
     };
     window.speechSynthesis.addEventListener("voiceschanged", handleVoicesChanged);
 
-    const unlockAudio = () => {
+    // Universal audio unblocker for mobile and desktop browsers
+    const autoUnlockAndPlay = () => {
       try {
         if (window.speechSynthesis.paused) {
           window.speechSynthesis.resume();
         }
-        setAudioUnlocked(true);
-        if (voiceEnabled && isPlayingRef.current) {
-          speakText(scene.teluguVoice);
+        // Try audio context silent unlock
+        const AudioCtx = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+        if (AudioCtx) {
+          const ctx = new AudioCtx();
+          if (ctx.state === "suspended") {
+            ctx.resume();
+          }
         }
-      } catch (e) {}
+        setAudioUnlocked(true);
+        if (isPlayingRef.current && !window.speechSynthesis.speaking) {
+          speakText(sceneRef.current.teluguVoice);
+        }
+      } catch (e) { }
     };
 
-    window.addEventListener("click", unlockAudio, { once: true });
-    window.addEventListener("touchstart", unlockAudio, { once: true });
-    window.addEventListener("keydown", unlockAudio, { once: true });
+    // Listen to every possible user event on the window to unlock speech immediately
+    const eventTypes = ["pointerdown", "touchstart", "touchend", "click", "keydown", "scroll", "mousemove"];
+    eventTypes.forEach((evt) => {
+      window.addEventListener(evt, autoUnlockAndPlay, { passive: true, once: true });
+    });
 
-    const timer = setTimeout(() => {
-      if (voiceEnabled && isPlayingRef.current) {
-        speakText(scene.teluguVoice);
+    // Immediate attempt on load
+    const timer1 = setTimeout(() => {
+      if (isPlayingRef.current) {
+        speakText(sceneRef.current.teluguVoice);
       }
-    }, 400);
+    }, 150);
+
+    const timer2 = setTimeout(() => {
+      if (isPlayingRef.current && !window.speechSynthesis.speaking) {
+        speakText(sceneRef.current.teluguVoice);
+      }
+    }, 600);
 
     return () => {
-      clearTimeout(timer);
+      clearTimeout(timer1);
+      clearTimeout(timer2);
       if (nextSceneTimeoutRef.current) clearTimeout(nextSceneTimeoutRef.current);
       window.speechSynthesis.removeEventListener("voiceschanged", handleVoicesChanged);
-      window.removeEventListener("click", unlockAudio);
-      window.removeEventListener("touchstart", unlockAudio);
-      window.removeEventListener("keydown", unlockAudio);
+      eventTypes.forEach((evt) => {
+        window.removeEventListener(evt, autoUnlockAndPlay);
+      });
     };
   }, []);
 
-  // Trigger speech on scene change
+  // Trigger speech on scene change automatically
   useEffect(() => {
     setSimulatedTypingProgress(0);
     setProgress(0);
-    if (voiceEnabled && isPlaying) {
+    if (isPlaying) {
       const timeout = setTimeout(() => {
         speakText(scene.teluguVoice);
-      }, 250);
+      }, 200);
       return () => clearTimeout(timeout);
     } else {
       if (typeof window !== "undefined" && "speechSynthesis" in window) {
@@ -379,9 +268,9 @@ export default function SimpleDemoPage() {
         setIsSpeaking(false);
       }
     }
-  }, [currentSceneIndex, voiceEnabled, isPlaying]);
+  }, [currentSceneIndex, isPlaying]);
 
-  // Chrome SpeechSynthesis auto-resume watchdog
+  // SpeechSynthesis auto-resume watchdog for mobile/background browsers
   useEffect(() => {
     const watchdog = setInterval(() => {
       if (typeof window !== "undefined" && "speechSynthesis" in window) {
@@ -389,7 +278,7 @@ export default function SimpleDemoPage() {
           window.speechSynthesis.resume();
         }
       }
-    }, 1500);
+    }, 800);
     return () => clearInterval(watchdog);
   }, []);
 
@@ -413,10 +302,6 @@ export default function SimpleDemoPage() {
           return 92;
         }
         if (prev >= 100) {
-          // If voice is disabled, advance automatically after 100%
-          if (!voiceEnabled) {
-            handleNext();
-          }
           return 100;
         }
         return Math.min(100, prev + 100 / totalSteps);
@@ -429,7 +314,7 @@ export default function SimpleDemoPage() {
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
     };
-  }, [isPlaying, currentSceneIndex, isSpeaking, voiceEnabled, scene.duration]);
+  }, [isPlaying, currentSceneIndex, isSpeaking, scene.duration]);
 
   return (
     <div className="farmer-demo-root">
@@ -445,85 +330,16 @@ export default function SimpleDemoPage() {
           </div>
 
           <div className="header-actions">
-            {/* Mode Switcher: Mobile Only vs Split View */}
-            <div className="view-mode-toggle-group">
-              <button
-                type="button"
-                className={`mode-toggle-btn ${displayMode === "split" ? "active" : ""}`}
-                onClick={() => setDisplayMode("split")}
-                title="పూర్తి వివరణ మరియు స్క్రీన్"
-              >
-                🖥️ పూర్తి వ్యూ
-              </button>
-              <button
-                type="button"
-                className={`mode-toggle-btn ${displayMode === "mobile-only" ? "active" : ""}`}
-                onClick={() => setDisplayMode("mobile-only")}
-                title="కేవలం మొబైల్ స్క్రీన్ మాత్రమే (WhatsApp/Instagram Reel Mode)"
-              >
-                📱 కేవలం మొబైల్ మాత్రమే
-              </button>
-            </div>
-
-            {/* Instagram Video Recorder Button */}
-            {!isRecording ? (
-              <button
-                type="button"
-                className="record-video-btn"
-                onClick={startRecording}
-                title="Instagram / WhatsApp video record and download"
-              >
-                🔴 వీడియో రికార్డ్ & డౌన్‌లోడ్
-              </button>
-            ) : (
-              <button
-                type="button"
-                className="record-video-btn active-recording animate-pulse"
-                onClick={stopRecording}
-                title="Stop recording and download video"
-              >
-                ⏹️ రికార్డింగ్ ఆపండి ({recordingSeconds}s)
-              </button>
-            )}
-
-            <button
-              type="button"
-              className={`voice-toggle-btn ${voiceEnabled ? "active" : ""}`}
-              onClick={() => setVoiceEnabled(!voiceEnabled)}
-            >
-              {voiceEnabled ? <VolumeUpFill size={18} /> : <VolumeMuteFill size={18} />}
-              <span>{voiceEnabled ? "వాయిస్: ఆన్" : "వాయిస్: ఆఫ్"}</span>
-            </button>
-
             <Link href="/" className="open-app-btn">
-              🚜 యాప్ ఓపెన్ చేయండి
+              🚜 యాప్ ఓపెన్ చేయండి →
             </Link>
           </div>
         </div>
       </header>
 
       {/* Main Content Area */}
-      <main className={`farmer-main-content ${displayMode === "mobile-only" ? "mobile-only-active" : ""}`}>
-        {/* Step Buttons (5 Steps) */}
-        <div className="step-tabs-container">
-          {SCENES.map((s, idx) => (
-            <button
-              key={s.id}
-              type="button"
-              className={`step-tab-btn ${idx === currentSceneIndex ? "active" : ""}`}
-              onClick={() => {
-                setProgress(0);
-                setCurrentSceneIndex(idx);
-              }}
-            >
-              <div className="step-tab-progress" style={{ width: idx === currentSceneIndex ? `${progress}%` : idx < currentSceneIndex ? "100%" : "0%" }} />
-              <span className="step-num-badge">{s.stepNumber}</span>
-              <span className="step-name-text">{s.stepName}</span>
-            </button>
-          ))}
-        </div>
-
-        <div className={`demo-showcase-layout ${displayMode === "mobile-only" ? "center-mobile-layout" : ""}`}>
+      <main className="farmer-main-content">
+        <div className="demo-showcase-layout">
           {/* Left: Big Phone Screen Display */}
           <div className="phone-display-wrapper">
             <div className="phone-mockup-frame">
@@ -532,7 +348,13 @@ export default function SimpleDemoPage() {
                 <span className="camera-circle" />
               </div>
 
-              {/* Real App Screen Body (Top bar is cleanly visible without overlap) */}
+              {/* Action Banner On Phone */}
+              <div className="phone-action-pill">
+                <span className="green-pulse-dot" />
+                <span>{scene.highlightText}</span>
+              </div>
+
+              {/* Real App Screen Body */}
               <div className="phone-screen-content">
                 {/* ---------------- SCENE 1: LOGIN SCREEN ---------------- */}
                 {scene.id === 1 && (
@@ -577,9 +399,9 @@ export default function SimpleDemoPage() {
                             <span className="text-typed">
                               {simulatedTypingProgress > 5
                                 ? "hemasai87@gmail.com".slice(
-                                    0,
-                                    Math.floor((simulatedTypingProgress / 100) * 20)
-                                  )
+                                  0,
+                                  Math.floor((simulatedTypingProgress / 100) * 20)
+                                )
                                 : ""}
                               <span className="blinking-bar">|</span>
                             </span>
@@ -593,9 +415,9 @@ export default function SimpleDemoPage() {
                             <span className="text-typed">
                               {simulatedTypingProgress > 35
                                 ? "••••••••".slice(
-                                    0,
-                                    Math.floor(((simulatedTypingProgress - 35) / 50) * 8)
-                                  )
+                                  0,
+                                  Math.floor(((simulatedTypingProgress - 35) / 50) * 8)
+                                )
                                 : ""}
                             </span>
                           </div>
@@ -603,9 +425,8 @@ export default function SimpleDemoPage() {
 
                         <button
                           type="button"
-                          className={`login-green-submit-btn ${
-                            simulatedTypingProgress > 70 ? "pressed" : ""
-                          }`}
+                          className={`login-green-submit-btn ${simulatedTypingProgress > 70 ? "pressed" : ""
+                            }`}
                         >
                           <span>
                             {simulatedTypingProgress > 85
@@ -884,59 +705,23 @@ export default function SimpleDemoPage() {
                   </div>
                 )}
               </div>
-
-              {/* Live Action Pill at bottom of phone - does NOT overlap top header */}
-              <div className="phone-action-pill-bottom">
-                <span className="green-pulse-dot" />
-                <span>{scene.highlightText}</span>
-              </div>
             </div>
-
-            {/* Mobile Only Mode Floating Controls */}
-            {displayMode === "mobile-only" && (
-              <div className="mobile-only-quick-controls">
-                <div className="video-player-buttons-row">
-                  <button type="button" className="btn-prev-step" onClick={handlePrev}>
-                    <ArrowLeft size={18} />
-                  </button>
-                  <button type="button" className="btn-main-play-pause" onClick={() => setIsPlaying(!isPlaying)}>
-                    {isPlaying ? <PauseFill size={22} /> : <PlayFill size={22} />}
-                    <span>{isPlaying ? "పాజ్" : "ప్లే"}</span>
-                  </button>
-                  <button type="button" className="btn-next-step" onClick={handleNext}>
-                    <ArrowRight size={18} />
-                  </button>
-                </div>
-
-                <div className="mobile-only-action-row">
-                  {!isRecording ? (
-                    <button type="button" className="btn-mobile-record" onClick={startRecording}>
-                      🔴 వీడియో రికార్డ్
-                    </button>
-                  ) : (
-                    <button type="button" className="btn-mobile-record recording animate-pulse" onClick={stopRecording}>
-                      ⏹️ ఆపి డౌన్‌లోడ్ ({recordingSeconds}s)
-                    </button>
-                  )}
-
-                  <button type="button" className="btn-mobile-whatsapp" onClick={shareVideoOnWhatsApp}>
-                    <Whatsapp size={18} /> షేర్
-                  </button>
-                </div>
-              </div>
-            )}
           </div>
 
-          {/* Right: Farmer Friendly Explanation & Playback (Hidden in Mobile-Only mode) */}
-          {displayMode === "split" && (
+          {/* Right: Farmer Friendly Explanation & Playback */}
           <div className="farmer-control-card">
             <div className="card-badge-row">
-              <span className="step-tag-pill">{scene.stepNumber}</span>
+              <span className="step-tag-pill">{scene.stepNumber} (5 లో {scene.id}వ స్టెప్)</span>
               {isSpeaking && (
                 <span className="speaking-tag animate-pulse">
                   <Soundwave size={16} /> వాయిస్ నడుస్తోంది...
                 </span>
               )}
+            </div>
+
+            {/* Visual Step Progress Bar */}
+            <div className="step-line-progress-bar">
+              <div className="step-line-fill" style={{ width: `${progress}%` }} />
             </div>
 
             <h2 className="step-big-title">{scene.stepName}</h2>
@@ -994,72 +779,21 @@ export default function SimpleDemoPage() {
               </button>
             </div>
 
-            {/* Instagram Video Recorder Box */}
-            <div className="instagram-recorder-card">
-              <div className="recorder-card-head">
-                <span>📹 Instagram Reels & Shorts వీడియో రికార్డర్:</span>
-              </div>
-              <p className="recorder-card-desc">
-                ఈ బటన్ నొక్కగానే డెమో 5 స్టెప్పులు ఆటోమేటిక్‌గా రికార్డ్ అయి మీ కంప్యూటర్/మొబైల్‌లోకి <b>వీడియో ఫైల్ (.mp4/.webm)</b> గా డౌన్‌లోడ్ అవుతుంది.
-              </p>
-
-              {!isRecording ? (
-                <button
-                  type="button"
-                  className="btn-start-screen-record"
-                  onClick={startRecording}
-                >
-                  🔴 Instagram కోసం వీడియో రికార్డ్ చేయండి (Record & Download)
-                </button>
-              ) : (
-                <div className="recording-live-box">
-                  <div className="recording-live-pulse">
-                    <span className="rec-red-dot" />
-                    <span>వీడియో రికార్డ్ అవుతోంది... సమయం: <b>{recordingSeconds}s</b></span>
-                  </div>
-                  <button
-                    type="button"
-                    className="btn-stop-screen-record"
-                    onClick={stopRecording}
-                  >
-                    ⏹️ రికార్డింగ్ ఆపి వీడియో డౌన్‌లోడ్ చేయండి
-                  </button>
-                </div>
-              )}
-
-              {recorderNotice && (
-                <div className="recorder-status-banner">
-                  <span>{recorderNotice}</span>
-                </div>
-              )}
-
-              {downloadedVideoUrl && (
-                <div className="download-complete-success-box animate-pop">
-                  <p>🎉 <b>వీడియో డౌన్‌లోడ్ పూర్తయింది!</b></p>
-                  <p>మీ కంప్యూటర్ <b>Downloads</b> ఫోల్డర్‌లో వీడియో సేవ్ అయింది. దీన్ని Instagram, WhatsApp Status లేదా YouTube లో పోస్ట్ చేయండి!</p>
-                </div>
-              )}
-            </div>
-
             {/* 1-Click WhatsApp Share */}
             <div className="share-whatsapp-cta-box">
-              <button
-                type="button"
-                onClick={shareVideoOnWhatsApp}
+              <a
+                href={`https://api.whatsapp.com/send?text=${encodeURIComponent(
+                  "🚜 *ట్రాక్టర్ లెక్కలు (Tractor Records)* - మీ ట్రాక్టర్ పనుల లెక్కలు, ఎకరాల లెక్క, బాకీలు, వాట్సాప్ రసీదుల కోసం సరికొత్త యాప్!\n\nపూర్తి వీడియో మరియు డెమో చూడటానికి ఇక్కడ క్లిక్ చేయండి:\nhttps://tractor-records-xi.vercel.app/demo\n\nయాప్ లాగిన్ వివరాలు:\nఈమెయిల్: hemasai87@gmail.com\nపాస్‌వర్డ్: Sai@123"
+                )}`}
+                target="_blank"
+                rel="noopener noreferrer"
                 className="whatsapp-share-btn-large"
               >
                 <Whatsapp size={22} />
-                <span>📲 WhatsApp లో వీడియో & డెమో షేర్ చేయండి</span>
-              </button>
-
-              <div className="whatsapp-video-instructions-pill">
-                <small>
-                  💡 <b>WhatsApp లో పూర్తి వీడియో పంపడానికి:</b> పైనున్న <b>"🔴 వీడియో రికార్డ్ & డౌన్‌లోడ్"</b> నొక్కి వీడియోను డౌన్‌లోడ్ చేసుకోండి. ఆ తర్వాత WhatsApp లో <b>Attach (📎)</b> లేదా <b>Gallery</b> నుండి ఆ వీడియోను నేరుగా రైతులకు పంపవచ్చు!
-                </small>
-              </div>
+                <span>📲 WhatsApp లో ఈ డెమో షేర్ చేయండి</span>
+              </a>
             </div>
           </div>
-          )}
         </div>
       </main>
 
@@ -1115,35 +849,27 @@ export default function SimpleDemoPage() {
           gap: 10px;
         }
 
-        .voice-toggle-btn {
-          background: rgba(255, 255, 255, 0.15);
-          color: #ffffff;
-          border: 1px solid rgba(255, 255, 255, 0.3);
-          padding: 7px 14px;
-          border-radius: 8px;
-          font-size: 13px;
-          font-weight: 700;
+        .open-app-btn {
+          background: linear-gradient(135deg, #fef08a 0%, #facc15 50%, #eab308 100%);
+          color: #14532d;
+          font-size: 14px;
+          font-weight: 900;
+          text-decoration: none;
+          padding: 10px 22px;
+          border-radius: 12px;
+          border: 1.5px solid #ffffff;
+          box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25), 0 0 15px rgba(250, 204, 21, 0.4);
           display: flex;
           align-items: center;
           gap: 6px;
-          cursor: pointer;
+          transition: all 0.2s ease;
+          letter-spacing: 0.2px;
         }
 
-        .voice-toggle-btn.active {
-          background: #ffffff;
-          color: #15803d;
-          font-weight: 800;
-        }
-
-        .open-app-btn {
-          background: #facc15;
-          color: #713f12;
-          font-size: 13px;
-          font-weight: 800;
-          text-decoration: none;
-          padding: 8px 16px;
-          border-radius: 8px;
-          box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+        .open-app-btn:hover {
+          transform: translateY(-2px) scale(1.03);
+          box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3), 0 0 22px rgba(250, 204, 21, 0.6);
+          background: linear-gradient(135deg, #ffffff 0%, #fde047 60%, #eab308 100%);
         }
 
         /* Main Content */
@@ -1155,110 +881,12 @@ export default function SimpleDemoPage() {
           width: 100%;
         }
 
-        /* 5 Step Buttons */
-        .step-tabs-container {
-          display: grid;
-          grid-template-columns: repeat(5, 1fr);
-          gap: 10px;
-          margin-bottom: 24px;
-        }
-
-        @media (max-width: 768px) {
-          .step-tabs-container {
-            grid-template-columns: 1fr;
-          }
-        }
-
-        .step-tab-btn {
-          background: #ffffff;
-          border: 2px solid #e2e8f0;
-          border-radius: 12px;
-          padding: 10px 8px;
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          gap: 4px;
-          cursor: pointer;
-          position: relative;
-          overflow: hidden;
-          transition: all 0.2s;
-        }
-
-        .step-tab-btn.active {
-          border-color: #15803d;
-          background: #f0fdf4;
-          box-shadow: 0 4px 10px rgba(21, 128, 61, 0.12);
-        }
-
-        .step-tab-progress {
-          position: absolute;
-          left: 0;
-          top: 0;
-          bottom: 0;
-          background: rgba(34, 197, 94, 0.2);
-          transition: width 0.05s linear;
-        }
-
-        .step-num-badge {
-          position: relative;
-          z-index: 2;
-          font-size: 11px;
-          font-weight: 800;
-          color: #15803d;
-          background: #dcfce7;
-          padding: 2px 8px;
-          border-radius: 10px;
-        }
-
-        .step-name-text {
-          position: relative;
-          z-index: 2;
-          font-size: 12px;
-          font-weight: 700;
-          color: #334155;
-          text-align: center;
-        }
-
-        .view-mode-toggle-group {
-          display: flex;
-          background: rgba(255, 255, 255, 0.15);
-          padding: 2px;
-          border-radius: 8px;
-          border: 1px solid rgba(255, 255, 255, 0.25);
-        }
-
-        .mode-toggle-btn {
-          background: transparent;
-          border: none;
-          color: #e2e8f0;
-          font-size: 12px;
-          font-weight: 700;
-          padding: 6px 10px;
-          border-radius: 6px;
-          cursor: pointer;
-          transition: all 0.2s;
-        }
-
-        .mode-toggle-btn.active {
-          background: #ffffff;
-          color: #15803d;
-          font-weight: 800;
-          box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
-        }
-
         /* Showcase Grid */
         .demo-showcase-layout {
           display: grid;
           grid-template-columns: 390px 1fr;
           gap: 32px;
           align-items: flex-start;
-        }
-
-        .demo-showcase-layout.center-mobile-layout {
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          justify-content: center;
         }
 
         @media (max-width: 900px) {
@@ -1270,9 +898,7 @@ export default function SimpleDemoPage() {
         /* Phone Mockup */
         .phone-display-wrapper {
           display: flex;
-          flex-direction: column;
-          align-items: center;
-          gap: 16px;
+          justify-content: center;
         }
 
         .phone-mockup-frame {
@@ -1288,15 +914,9 @@ export default function SimpleDemoPage() {
           flex-direction: column;
         }
 
-        .center-mobile-layout .phone-mockup-frame {
-          width: 410px;
-          height: 780px;
-          box-shadow: 0 25px 60px rgba(0, 0, 0, 0.35);
-        }
-
         .phone-top-notch {
           width: 120px;
-          height: 20px;
+          height: 22px;
           background: #1e293b;
           border-radius: 0 0 14px 14px;
           margin: 0 auto;
@@ -1317,24 +937,22 @@ export default function SimpleDemoPage() {
           border-radius: 50%;
         }
 
-        .phone-action-pill-bottom {
+        .phone-action-pill {
           position: absolute;
-          bottom: 48px;
-          left: 12px;
-          right: 12px;
-          background: rgba(15, 23, 42, 0.94);
-          backdrop-filter: blur(8px);
+          top: 30px;
+          left: 14px;
+          right: 14px;
+          background: rgba(15, 23, 42, 0.9);
           color: #f8fafc;
-          padding: 8px 12px;
+          padding: 6px 12px;
           border-radius: 20px;
           font-size: 11px;
           font-weight: 700;
-          z-index: 45;
+          z-index: 40;
           display: flex;
           align-items: center;
           gap: 8px;
-          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
-          border: 1px solid rgba(255, 255, 255, 0.15);
+          box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
         }
 
         .green-pulse-dot {
@@ -1357,60 +975,8 @@ export default function SimpleDemoPage() {
           flex-direction: column;
           position: relative;
           background: #f8fafc;
-          padding-top: 20px;
+          padding-top: 32px;
           overflow: hidden;
-        }
-
-        /* Mobile Only Quick Controls */
-        .mobile-only-quick-controls {
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          gap: 10px;
-          background: #ffffff;
-          padding: 12px 20px;
-          border-radius: 16px;
-          border: 1px solid #e2e8f0;
-          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-          width: 100%;
-          max-width: 410px;
-        }
-
-        .mobile-only-action-row {
-          display: flex;
-          gap: 10px;
-          width: 100%;
-        }
-
-        .btn-mobile-record {
-          flex: 1;
-          background: #ef4444;
-          color: #ffffff;
-          border: none;
-          padding: 10px 14px;
-          border-radius: 10px;
-          font-weight: 800;
-          font-size: 13px;
-          cursor: pointer;
-        }
-
-        .btn-mobile-record.recording {
-          background: #b91c1c;
-          border: 2px solid #ffffff;
-        }
-
-        .btn-mobile-whatsapp {
-          display: flex;
-          align-items: center;
-          gap: 6px;
-          background: #25d366;
-          color: #ffffff;
-          border: none;
-          padding: 10px 16px;
-          border-radius: 10px;
-          font-weight: 800;
-          font-size: 13px;
-          cursor: pointer;
         }
 
         .app-screen-layer {
@@ -2183,6 +1749,21 @@ export default function SimpleDemoPage() {
           border-radius: 20px;
         }
 
+        .step-line-progress-bar {
+          width: 100%;
+          height: 6px;
+          background: #e2e8f0;
+          border-radius: 10px;
+          overflow: hidden;
+        }
+
+        .step-line-fill {
+          height: 100%;
+          background: #22c55e;
+          border-radius: 10px;
+          transition: width 0.05s linear;
+        }
+
         .speaking-tag {
           background: #eff6ff;
           color: #1d4ed8;
@@ -2317,143 +1898,6 @@ export default function SimpleDemoPage() {
           font-size: 15px;
           text-decoration: none;
           box-shadow: 0 4px 14px rgba(37, 211, 102, 0.35);
-          width: 100%;
-          border: none;
-          cursor: pointer;
-        }
-
-        .whatsapp-video-instructions-pill {
-          margin-top: 8px;
-          background: #f0fdf4;
-          border: 1px solid #bbf7d0;
-          padding: 8px 12px;
-          border-radius: 8px;
-          color: #166534;
-          line-height: 1.4;
-        }
-
-        /* Instagram Recorder Box */
-        .record-video-btn {
-          background: #ef4444;
-          color: #ffffff;
-          border: none;
-          padding: 7px 14px;
-          border-radius: 8px;
-          font-size: 13px;
-          font-weight: 800;
-          cursor: pointer;
-          box-shadow: 0 2px 6px rgba(239, 68, 68, 0.3);
-          transition: background 0.2s, transform 0.1s;
-        }
-
-        .record-video-btn:hover {
-          background: #dc2626;
-        }
-
-        .record-video-btn.active-recording {
-          background: #b91c1c;
-          border: 2px solid #ffffff;
-        }
-
-        .instagram-recorder-card {
-          background: linear-gradient(135deg, #fff1f2 0%, #ffe4e6 100%);
-          border: 1.5px solid #fecdd3;
-          border-radius: 14px;
-          padding: 16px;
-          display: flex;
-          flex-direction: column;
-          gap: 10px;
-        }
-
-        .recorder-card-head {
-          font-size: 13px;
-          font-weight: 800;
-          color: #be123c;
-        }
-
-        .recorder-card-desc {
-          margin: 0;
-          font-size: 12px;
-          color: #881337;
-          line-height: 1.4;
-        }
-
-        .btn-start-screen-record {
-          background: #e11d48;
-          color: #ffffff;
-          border: none;
-          padding: 12px 16px;
-          border-radius: 10px;
-          font-size: 14px;
-          font-weight: 800;
-          cursor: pointer;
-          box-shadow: 0 4px 12px rgba(225, 29, 72, 0.35);
-          transition: all 0.2s;
-        }
-
-        .btn-start-screen-record:hover {
-          background: #be123c;
-          transform: translateY(-1px);
-        }
-
-        .recording-live-box {
-          display: flex;
-          flex-direction: column;
-          gap: 8px;
-        }
-
-        .recording-live-pulse {
-          display: flex;
-          align-items: center;
-          gap: 8px;
-          font-size: 13px;
-          font-weight: 700;
-          color: #be123c;
-          background: #ffffff;
-          padding: 8px 12px;
-          border-radius: 8px;
-          border: 1px solid #fecdd3;
-        }
-
-        .rec-red-dot {
-          width: 10px;
-          height: 10px;
-          background: #e11d48;
-          border-radius: 50%;
-          animation: blink 0.8s infinite;
-        }
-
-        .btn-stop-screen-record {
-          background: #111827;
-          color: #ffffff;
-          border: none;
-          padding: 10px 14px;
-          border-radius: 8px;
-          font-size: 13px;
-          font-weight: 800;
-          cursor: pointer;
-        }
-
-        .recorder-status-banner {
-          background: #ffffff;
-          padding: 8px 10px;
-          border-radius: 6px;
-          font-size: 11px;
-          font-weight: 700;
-          color: #475569;
-        }
-
-        .download-complete-success-box {
-          background: #dcfce7;
-          border: 1.5px solid #86efac;
-          border-radius: 10px;
-          padding: 12px;
-        }
-
-        .download-complete-success-box p {
-          margin: 3px 0;
-          font-size: 12px;
-          color: #166534;
         }
 
         .animate-pop {
