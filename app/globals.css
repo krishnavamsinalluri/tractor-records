@@ -941,17 +941,21 @@ a {
 .work-item-type-wrap {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
 }
 
 .work-type-mini-icon {
-  width: 36px;
-  height: 36px;
+  width: 62px;
+  height: 48px;
   border-radius: 10px;
-  background: #f3f4f6;
+  background: #ffffff;
+  border: 1.5px solid #e2e8f0;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
   display: flex;
   align-items: center;
   justify-content: center;
+  overflow: hidden;
+  flex-shrink: 0;
 }
 
 .work-item-type-wrap strong {
@@ -1543,14 +1547,17 @@ a {
 }
 
 .type-avatar {
-  width: 44px;
-  height: 44px;
+  width: 62px;
+  height: 48px;
   flex-shrink: 0;
   border-radius: 10px;
-  background: #f3f4f6;
+  background: #ffffff;
+  border: 1.5px solid #e2e8f0;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
   display: flex;
   align-items: center;
   justify-content: center;
+  overflow: hidden;
 }
 
 .work-type-thumbnail {
@@ -1559,7 +1566,7 @@ a {
   justify-content: center;
   flex-shrink: 0;
   overflow: hidden;
-  border-radius: 6px;
+  border-radius: 10px;
 }
 
 .work-type-form-fields {

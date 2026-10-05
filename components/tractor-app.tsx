@@ -652,6 +652,7 @@ function TractorAppContent() {
           <CustomerDetail
             customer={selectedCustomer}
             works={works.filter((work) => work.customer_id === selectedCustomer.id)}
+            workTypes={workTypes}
             filter={customerFilters[selectedCustomer.id] ?? "all"}
             onFilterChange={(filter) => setCustomerFilters((current) => ({ ...current, [selectedCustomer.id]: filter }))}
             onBack={goBackFromCustomer}
@@ -1298,6 +1299,7 @@ function Customers({
 function CustomerDetail({
   customer,
   works,
+  workTypes,
   filter,
   onFilterChange,
   onBack,
@@ -1311,6 +1313,7 @@ function CustomerDetail({
 }: {
   customer: Customer;
   works: WorkRecord[];
+  workTypes: WorkType[];
   filter: "all" | "pending" | "paid";
   onFilterChange: (filter: "all" | "pending" | "paid") => void;
   onBack: () => void;
@@ -1478,13 +1481,24 @@ function CustomerDetail({
               const workPaid = paidFor(work);
               const unit = work.charge_basis === "hour" ? t("hoursWorked") : t("acres");
               const isPaid = workBalance <= 0;
+              const type = work.work_type_id
+                ? workTypes.find((wt) => wt.id === work.work_type_id)
+                : workTypes.find((wt) => wt.name.toLowerCase() === work.work_type_name.toLowerCase());
 
               return (
                 <article className="work-item-card" key={work.id}>
                   <div className="work-item-header">
                     <div className="work-item-type-wrap">
                       <div className="work-type-mini-icon">
-                        <WorkTypeIcon name={work.work_type_name} size={20} />
+                        <WorkTypeThumbnail
+                          workType={{
+                            name: work.work_type_name,
+                            image_path: type?.image_path ?? null,
+                          }}
+                          width={60}
+                          height={46}
+                          fit="contain"
+                        />
                       </div>
                       <div>
                         <strong>{displayWorkType(work.work_type_name, language)}</strong>
