@@ -1998,15 +1998,58 @@ a {
   opacity: 0.7;
 }
 
+.auth-tab-row {
+  display: flex;
+  background: #f1f5f9;
+  border-radius: 12px;
+  padding: 4px;
+  gap: 4px;
+  margin-bottom: 4px;
+}
+
+.auth-tab-btn {
+  flex: 1;
+  padding: 8px 12px;
+  border: none;
+  background: transparent;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #64748b;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.auth-tab-btn.active {
+  background: #ffffff;
+  color: var(--primary-green, #15803d);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+}
+
 .login-links {
-  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
   margin-top: 4px;
 }
 
 .auth-text-link {
   font-size: 13px;
   font-weight: 600;
-  color: var(--primary-green);
+  color: var(--primary-green, #15803d);
+  text-decoration: none;
+}
+
+.auth-text-btn {
+  background: none;
+  border: none;
+  padding: 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--primary-green, #15803d);
+  cursor: pointer;
+  text-decoration: underline;
 }
 
 .form-error {

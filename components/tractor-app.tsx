@@ -771,24 +771,55 @@ function SetupRequired() {
 // LOGIN SCREEN (Matching Reference Screen 1)
 // -------------------------------------------------------------
 function Login() {
-  const { t } = useLanguage();
+  const { language, t } = useLanguage();
   const router = useRouter();
+  const [mode, setMode] = useState<"signin" | "signup">("signin");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [passwordVisible, setPasswordVisible] = useState(false);
   const [error, setError] = useState("");
+  const [successMsg, setSuccessMsg] = useState("");
   const [busy, setBusy] = useState(false);
+
+  const switchMode = (newMode: "signin" | "signup") => {
+    setMode(newMode);
+    setError("");
+    setSuccessMsg("");
+  };
 
   const submit = async (event: FormEvent) => {
     event.preventDefault();
     setBusy(true);
     setError("");
-    const { error: authError } = await getSupabase().auth.signInWithPassword({ email, password });
-    if (authError) {
-      setError(friendlyError(authError.message, t));
-      setBusy(false);
+    setSuccessMsg("");
+
+    if (mode === "signup") {
+      if (password.length < 6) {
+        setError(language === "te" ? "పాస్‌వర్డ్ కనీసం 6 అక్షరాలు ఉండాలి." : "Password must be at least 6 characters.");
+        setBusy(false);
+        return;
+      }
+      const { data, error: authError } = await getSupabase().auth.signUp({
+        email,
+        password,
+      });
+      if (authError) {
+        setError(friendlyError(authError.message, t));
+        setBusy(false);
+      } else if (data.session) {
+        router.replace("/");
+      } else {
+        setSuccessMsg(t("registerSuccessCheckEmail"));
+        setBusy(false);
+      }
     } else {
-      router.replace("/");
+      const { error: authError } = await getSupabase().auth.signInWithPassword({ email, password });
+      if (authError) {
+        setError(friendlyError(authError.message, t));
+        setBusy(false);
+      } else {
+        router.replace("/");
+      }
     }
   };
 
@@ -826,10 +857,30 @@ function Login() {
           <div className="login-card-top">
             <LanguageToggle compact />
           </div>
-          <div className="login-card-heading">
-            <h2>{t("loginWelcome")}</h2>
-            <p>{t("loginHelp")}</p>
+
+          {/* Mode Switch Tabs (Login / Register) */}
+          <div className="auth-tab-row">
+            <button
+              type="button"
+              className={`auth-tab-btn ${mode === "signin" ? "active" : ""}`}
+              onClick={() => switchMode("signin")}
+            >
+              {t("signIn")}
+            </button>
+            <button
+              type="button"
+              className={`auth-tab-btn ${mode === "signup" ? "active" : ""}`}
+              onClick={() => switchMode("signup")}
+            >
+              {t("signUp")}
+            </button>
           </div>
+
+          <div className="login-card-heading">
+            <h2>{mode === "signin" ? t("loginWelcome") : t("createAccount")}</h2>
+            <p>{mode === "signin" ? t("loginHelp") : t("registerHelp")}</p>
+          </div>
+
           <form onSubmit={submit} className="login-form">
             <label className="input-group">
               <FieldLabel label={t("email")} />
@@ -855,7 +906,7 @@ function Login() {
                   required
                   value={password}
                   onChange={(event) => setPassword(event.target.value)}
-                  autoComplete="current-password"
+                  autoComplete={mode === "signin" ? "current-password" : "new-password"}
                   placeholder="••••••••"
                 />
                 <button
@@ -870,16 +921,36 @@ function Login() {
             </label>
 
             {error && <p className="form-error" role="alert">{error}</p>}
+            {successMsg && <p className="form-success" role="status">{successMsg}</p>}
 
             <button type="submit" className="login-submit-button" disabled={busy}>
-              <span>{busy ? t("signingIn") : t("loginBtn")}</span>
+              <span>{busy ? (mode === "signin" ? t("signingIn") : t("signingUp")) : (mode === "signin" ? t("loginBtn") : t("registerBtn"))}</span>
               <span aria-hidden="true">→</span>
             </button>
 
             <div className="login-links">
-              <Link className="auth-text-link" href="/forgot-password">
-                {t("forgotPassword")}
-              </Link>
+              {mode === "signin" ? (
+                <>
+                  <Link className="auth-text-link" href="/forgot-password">
+                    {t("forgotPassword")}
+                  </Link>
+                  <button
+                    type="button"
+                    className="auth-text-btn"
+                    onClick={() => switchMode("signup")}
+                  >
+                    {t("dontHaveAccount")}
+                  </button>
+                </>
+              ) : (
+                <button
+                  type="button"
+                  className="auth-text-btn"
+                  onClick={() => switchMode("signin")}
+                >
+                  {t("alreadyHaveAccount")}
+                </button>
+              )}
             </div>
           </form>
           <p className="login-security-note"><LockFill size={15} />{t("loginSecurityNote")}</p>
